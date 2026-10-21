@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Figure It · פסלונים מודפסים מתמונה</title>
+  <meta name="description" content="מעלים תמונה של חיית המחמד או ציור של הילדים, ומקבלים פסלון מודפס בתלת־ממד.">
+  <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141519" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="he_IL">
+  <meta property="og:title" content="Figure It · פסלונים מודפסים מתמונה">
+  <meta property="og:description" content="מעלים תמונה של חיית המחמד או ציור של הילדים, ומקבלים פסלון מודפס בתלת־ממד.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&display=swap">
+  <link rel="stylesheet" href="styles.css?v=__V__">
+  <script type="module" src="app.js?v=__V__"></script>
+  <!-- The closed notice is shown by default so a broken config.js reads as closed; without JS the form's own note explains. -->
+  <noscript><style>#closed-notice { display: none; }</style></noscript>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./">
+      <span class="logo" aria-hidden="true"><span class="brick red"></span><span class="brick yellow"></span><span class="brick blue"></span></span>
+      <span class="brand-name">Figure It</span>
+    </a>
+    <p class="tagline">פסלונים מודפסים בתלת־ממד, מתמונה של חיית המחמד או מציור של הילדים</p>
+  </header>
+
+  <main>
+    <section class="how" aria-labelledby="how-title">
+      <h2 id="how-title">איך זה עובד</h2>
+      <ol class="steps">
+        <li class="brick red"><span class="step-n">1</span>מעלים תמונות</li>
+        <li class="brick yellow"><span class="step-n">2</span><span>משלמים <span class="nowrap">ב-Grow</span></span></li>
+        <li class="brick blue"><span class="step-n">3</span>אנחנו מדפיסים ומוסרים לכם<span id="delivery-note" class="step-note" hidden></span></li>
+      </ol>
+    </section>
+
+    <!-- Closed until app.js has read config.js and hides this: a config.js or app.js that fails to load
+         (a typo, a stray apostrophe) then leaves a closed page, not a form that can't be sent. -->
+    <p id="closed-notice" class="card notice">ההזמנות ייפתחו בקרוב.</p>
+
+    <section id="pending" class="card" aria-labelledby="pending-title" hidden>
+      <h2 id="pending-title" tabindex="-1">ההזמנה האחרונה שלכם: <bdi id="pending-code" class="inline-code"></bdi></h2>
+      <p id="pending-text"></p>
+      <div id="pending-pay" class="pay"></div>
+      <button type="button" id="pending-dismiss" class="button">כבר שילמתי / הסתרה</button>
+    </section>
+
+    <section id="thanks" class="card" aria-labelledby="thanks-title" hidden>
+      <h2 id="thanks-title" tabindex="-1">תודה!</h2>
+      <p id="thanks-text"></p>
+      <p id="thanks-code" hidden>מספר ההזמנה: <bdi class="inline-code"></bdi></p>
+      <button type="button" id="thanks-new" class="button">הזמנה חדשה</button>
+    </section>
+
+    <form id="order-form" class="card" novalidate>
+      <h2 id="form-title" tabindex="-1">הזמנת פסלונים</h2>
+      <noscript><p class="notice">כדי להזמין צריך דפדפן עם JavaScript פעיל.</p></noscript>
+
+      <fieldset id="fields" class="plain" disabled>
+        <p id="price-hint" class="price-hint" hidden></p>
+        <p class="hint">ההדפסה בצבע אחד: הצבעים שבתמונה או בציור לא עוברים לפסלון.</p>
+
+        <!-- One item per figurine, made by app.js from the template below. -->
+        <ol id="figurines" class="figurines"></ol>
+        <template id="figurine-template">
+          <li class="figurine">
+            <div class="figurine-head">
+              <h3 class="figurine-title" data-role="title" tabindex="-1"></h3>
+              <button type="button" class="link-button" data-role="remove">הסרה</button>
+            </div>
+            <fieldset class="plain choices" data-role="kinds">
+              <legend data-role="kinds-legend">מה מדפיסים?</legend>
+              <label class="choice pet">
+                <input type="radio" value="pet">
+                <span class="choice-title">פסלון של חיית מחמד</span>
+              </label>
+              <label class="choice drawing">
+                <input type="radio" value="drawing">
+                <span class="choice-title">צעצוע מציור של ילד/ה</span>
+              </label>
+              <p class="field-error" data-role="kind-error" hidden></p>
+            </fieldset>
+
+            <div class="field photos">
+              <p class="label">תמונות</p>
+              <p class="hint" data-role="photos-hint"><bdi dir="ltr">1–3</bdi> תמונות של אותה חיה או של אותו ציור.</p>
+              <p class="hint tip" data-role="tip" hidden></p>
+              <ul class="thumbs" data-role="thumbs"></ul>
+              <input class="visually-hidden" type="file" accept="image/*" multiple data-role="input">
+              <label class="button file-button" data-role="button">בחירת תמונות</label>
+              <p class="hint photo-status" aria-live="polite" data-role="status"></p>
+              <p class="field-error" data-role="photos-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label data-role="subject-label">שם החיה או הדמות <span class="optional">(לא חובה)</span></label>
+              <input type="text" maxlength="80" autocomplete="off" data-role="subject">
+              <p class="field-error" data-role="subject-error" hidden></p>
+            </div>
+          </li>
+        </template>
+        <div class="add-figurine">
+          <button type="button" id="add-figurine" class="button">הוספת פסלון</button>
+          <p id="figurines-hint" class="hint"></p>
+        </div>
+
+        <fieldset class="plain group">
+          <legend>פרטים ליצירת קשר</legend>
+          <div class="field">
+            <label for="customer-name">שם מלא</label>
+            <input id="customer-name" name="customer-name" type="text" maxlength="120" autocomplete="name" data-field="name" aria-describedby="name-error">
+            <p id="name-error" class="field-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="phone">טלפון</label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" maxlength="20" data-field="phone" aria-describedby="phone-hint phone-error">
+            <p id="phone-hint" class="hint">אם מישהו אחר משלם, חשוב להזין את מספר ההזמנה בעמוד התשלום.</p>
+            <p id="phone-error" class="field-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="email">אימייל</label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" dir="ltr" maxlength="200" data-field="email" aria-describedby="email-error">
+            <p id="email-error" class="field-error" hidden></p>
+          </div>
+        </fieldset>
+
+        <fieldset class="plain group choices" aria-describedby="delivery-error">
+          <legend>איך תקבלו את ההזמנה?</legend>
+          <label class="choice pickup">
+            <input type="radio" name="delivery" value="pickup" data-field="delivery">
+            <span class="choice-title">איסוף עצמי<span id="pickup-from"></span>, בתיאום מראש</span>
+            <span class="price">ללא תשלום</span>
+          </label>
+          <label class="choice pickup-point">
+            <input type="radio" name="delivery" value="pickup_point" data-field="delivery">
+            <span class="choice-title">משלוח לנקודת איסוף קרובה אליכם</span>
+            <span class="price" id="pickup-point-price" hidden></span>
+          </label>
+          <p id="delivery-error" class="field-error" hidden></p>
+        </fieldset>
+
+        <div class="field" id="address-field" hidden>
+          <label for="address">הכתובת שלכם</label>
+          <textarea id="address" name="address" rows="2" maxlength="500" autocomplete="street-address" data-field="address" aria-describedby="address-hint address-error"></textarea>
+          <p id="address-hint" class="hint">רחוב, מספר ועיר. נשלח לנקודת האיסוף הקרובה לכתובת הזו ונודיע לכם לאן.</p>
+          <p id="address-error" class="field-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="notes">הערות <span class="optional">(לא חובה)</span></label>
+          <textarea id="notes" name="notes" rows="3" maxlength="2000" data-field="notes" aria-describedby="notes-error"></textarea>
+          <p id="notes-error" class="field-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label class="check">
+            <input id="consent" name="consent" type="checkbox" data-field="consent" aria-describedby="consent-error">
+            <span>קראתי ואני מסכים/ה ל<a href="terms.html" target="_blank">תנאי ההזמנה ולמדיניות הפרטיות</a></span>
+          </label>
+          <p id="consent-error" class="field-error" hidden></p>
+        </div>
+      </fieldset>
+
+      <div id="form-alert" class="form-alert" role="alert"></div>
+      <p id="total" class="total" hidden></p>
+      <button id="submit" class="button brick green submit" type="submit" disabled>שליחת ההזמנה</button>
+      <p id="status" class="status" aria-live="polite"></p>
+      <p id="status-help" class="hint" hidden></p>
+    </form>
+
+    <section id="confirmation" class="card" aria-labelledby="confirm-title" hidden>
+      <h2 id="confirm-title" tabindex="-1">ההזמנה התקבלה!</h2>
+      <p id="confirm-summary"></p>
+      <div class="code-row">
+        <p class="label">מספר ההזמנה</p>
+        <p class="brick yellow code"><bdi id="confirm-code"></bdi></p>
+        <button type="button" id="copy-code" class="button">העתקה</button>
+        <span id="copy-status" class="hint" aria-live="polite"></span>
+      </div>
+      <h3>השלב הבא: תשלום</h3>
+      <div id="confirm-pay" class="pay"></div>
+      <button type="button" id="confirm-new" class="button">הזמנה חדשה</button>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p id="footer-contact" hidden></p>
+    <p id="footer-business" hidden></p>
+    <p><a href="terms.html">תנאי ההזמנה ומדיניות הפרטיות</a> · © Figure It</p>
+  </footer>
+</body>
+</html>

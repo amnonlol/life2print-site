@@ -1,0 +1,14 @@
+{
+  "name": "life2print-site",
+  "private": true,
+  "description": "Life2Print's customer order page (GitHub Pages) and its Supabase schema",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node supabase/test.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8"
+  }
+}

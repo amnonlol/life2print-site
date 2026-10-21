@@ -1,0 +1,94 @@
+name: Deploy to GitHub Pages
+
+# Publishes site/ as it is (no build step) on every push to main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# What the official Pages actions need.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push waits rather than cancelling one that's half done.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # site/ is published, so only the publishable key may be in it. A secret key (sb_secret_…, or a legacy
+      # service_role JWT) bypasses RLS: anyone could read every customer's details and photos.
+      #   1. config.js must not even mention sb_secret_ or service_role (the plain rule in the spec).
+      #   2. No sb_secret_ key anywhere in site/.
+      #   3. No JWT anywhere in site/ whose role is service_role: in a JWT the role only shows once decoded,
+      #      so rule 1 can't see one.
+      # This runs after the push, on a public repository: a key it catches is already in the git history. It keeps
+      # the key off the live site but can't undo the leak, so the messages say to rotate it.
+      # `npm run check` (scripts/check.mjs) runs the same rules before a commit.
+      # Only file names are printed: this repo's Actions logs are public.
+      - name: Refuse a secret Supabase key
+        run: |
+          fail=0
+          if grep -qE 'sb_secret_|service_role' site/config.js; then
+            echo "::error file=site/config.js::config.js mentions sb_secret_ or service_role. Only the sb_publishable_ key belongs there; reword any comment that names them. If a real key was in it, it is already public in this repository's history: rotate it now (SETUP.md step 16)."
+            fail=1
+          fi
+          for file in $(grep -rlE 'sb_secret_[A-Za-z0-9_-]{8,}' site/ || true); do
+            echo "::error file=$file::$file holds what looks like a Supabase secret key (sb_secret_...). It is already public in this repository's history: rotate it now (SETUP.md step 16); deleting it in a new commit doesn't undo that."
+            fail=1
+          done
+          for file in $(grep -rlE 'eyJ[A-Za-z0-9_-]+[.]eyJ' site/ || true); do
+            for jwt in $(grep -oE 'eyJ[A-Za-z0-9_-]+[.]eyJ[A-Za-z0-9_-]+' "$file"); do
+              payload=$(printf '%s' "${jwt#*.}" | tr '_-' '/+')
+              while [ $(( ${#payload} % 4 )) -ne 0 ]; do payload="$payload="; done
+              claims=$(printf '%s' "$payload" | base64 -d 2>/dev/null || true)
+              case "$claims" in
+                *'"service_role"'*)
+                  echo "::error file=$file::$file holds a Supabase JWT whose role is service_role (the legacy secret key). It is already public in this repository's history: rotate it now (SETUP.md step 16); deleting it in a new commit doesn't undo that."
+                  fail=1
+                  ;;
+              esac
+            done
+          done
+          exit $fail
+
+      # If app.js or config.js doesn't load, the page stays on its built-in "orders will open soon" notice and nobody
+      # can order. The usual cause is a Hebrew abbreviation typed with an ASCII apostrophe inside a '…' string in
+      # config.js. The import also catches a missing or renamed CONFIG export. This step comes after the key guard on
+      # purpose: a syntax error prints the offending source line, and the guard has already stopped any file holding a key.
+      # No setup-node or npm: the runner's preinstalled node is enough, and package.json's "type": "module" makes
+      # site/config.js a module. `npm run check` does the same locally.
+      - name: Check the site's scripts load
+        run: |
+          node --check site/app.js
+          node --input-type=module -e "const { CONFIG } = await import('./site/config.js'); if (!CONFIG || typeof CONFIG !== 'object') throw new Error('site/config.js must export CONFIG');"
+
+      # GitHub Pages serves every file with a 10-minute cache. A new ?v= per commit makes the files of one deploy
+      # load together, so a cached app.js never runs against a newer config.js or the other way round.
+      # Locally the literal __V__ works as it is.
+      - name: Stamp asset URLs with the commit
+        run: sed -i "s/__V__/${GITHUB_SHA::8}/g" site/*.html site/*.js
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

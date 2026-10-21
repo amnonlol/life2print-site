@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>תנאי ההזמנה ומדיניות הפרטיות · Figure It</title>
+  <meta name="description" content="תנאי ההזמנה ומדיניות הפרטיות של Figure It: פסלונים מודפסים בתלת־ממד לפי תמונה.">
+  <meta name="theme-color" content="#f5f2ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141519" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&display=swap">
+  <link rel="stylesheet" href="styles.css?v=__V__">
+  <script type="module">
+    // Fills the business details from config.js. Anything not set there keeps its [placeholder], except inside a
+    // data-if element, which is hidden unless every value it lists is set (the phone, when there's no phone).
+    import { CONFIG } from './config.js?v=__V__';
+    const setting = (path) => {
+      const value = path.split('.').reduce((object, key) => object?.[key], CONFIG);
+      return typeof value === 'string' ? value.trim() : '';
+    };
+    for (const node of document.querySelectorAll('[data-config]')) {
+      const value = setting(node.dataset.config);
+      if (value) node.textContent = value;
+    }
+    for (const node of document.querySelectorAll('[data-if]')) node.hidden = !node.dataset.if.split(' ').every(setting);
+  </script>
+</head>
+<body>
+  <!--
+    TEMPLATE: not legal advice, and not ready to publish as it is.
+    Before taking real orders:
+    - fill every [placeholder] in square brackets (business name, ID number, address, phone, email, delivery time and
+      the self-pickup place are filled from site/config.js when they're set there; the phone's sentences are hidden
+      while it's not set);
+    - check every statement against how the business actually works (prices, VAT status, shipping, retention);
+    - remove the dashed notes marked "לבדיקה";
+    - have the whole page reviewed by a lawyer: cancelling custom-made goods under the Consumer Protection Law,
+      product safety and whether the drawing toy counts as a "toy" under Israeli Standard 562, and the privacy
+      notice under the Privacy Protection Law (amendment 13).
+    Link the same page in each Grow payment page's terms (תקנון) setting.
+  -->
+  <header class="site-header">
+    <a class="brand" href="./">
+      <span class="logo" aria-hidden="true"><span class="brick red"></span><span class="brick yellow"></span><span class="brick blue"></span></span>
+      <span class="brand-name">Figure It</span>
+    </a>
+  </header>
+
+  <main>
+    <article class="card legal">
+      <h1>תנאי ההזמנה ומדיניות הפרטיות</h1>
+      <p class="hint">עדכון אחרון: 22 באוקטובר 2026</p>
+
+      <h2>מי אנחנו</h2>
+      <p>
+        האתר והשירות מופעלים על ידי <span data-config="business.name">[שם העסק]</span>,
+        <span data-config="business.id">[ח.פ./ע.מ.]</span>, <span data-config="business.address">[כתובת העסק]</span>.
+        אפשר לפנות אלינו<span data-if="contact.phone"> בטלפון <bdi data-config="contact.phone">[טלפון]</bdi> או</span>
+        באימייל <bdi data-config="contact.email">[אימייל]</bdi>.
+      </p>
+
+      <h2>מה מזמינים</h2>
+      <ul>
+        <li>פסלון בהדפסת תלת־ממד שמיוצר במיוחד בשבילכם לפי התמונות ששלחתם: פסלון של חיית מחמד, או צעצוע לפי ציור של ילד/ה.</li>
+        <li>
+          את המודל מכינים בעזרת כלי בינה מלאכותית ובעבודה שלנו, ולכן הפסלון הוא פרשנות בתלת־ממד של התמונה ולא העתק מדויק שלה.
+          פרטים קטנים מאוד ומרקמים לא תמיד עוברים להדפסה, וצבעים לא עוברים בכלל: הפסלון כולו מודפס בצבע אחד.
+        </li>
+        <li>ההדפסה בצבע אחד (לבן), מפלסטיק PLA, בגודל של כ-12 ס"מ בצד הארוך.</li>
+        <li>בהזמנה אחת אפשר להזמין עד 10 פסלונים. לכל פסלון מצרפים 1–3 תמונות של אותה חיה או של אותו ציור.</li>
+        <li>אם לא נצליח להכין פסלון טוב מהתמונות, ניצור קשר: נבקש תמונה אחרת, או נבטל את ההזמנה ונחזיר את מלוא הסכום.</li>
+        <li>בשליחת ההזמנה אתם מאשרים שמותר לכם להשתמש בתמונות ששלחתם.</li>
+      </ul>
+
+      <h2>מחיר ותשלום</h2>
+      <ul>
+        <li>
+          המחיר לפסלון, המחיר המוזל בהזמנה של 2 פסלונים ומעלה ודמי המשלוח לנקודת איסוף מופיעים בעמוד ההזמנה,
+          והסכום הכולל מוצג לפני שליחת ההזמנה. המחירים כוללים מע"מ.        </li>
+        <li>התשלום מתבצע בעמוד התשלום של Grow. את פרטי כרטיס האשראי מזינים שם בלבד: אנחנו לא רואים אותם ולא שומרים אותם.</li>
+        <li>בעמוד התשלום יש לבחור את מה שמופיע באישור ההזמנה ולהזין את מספר ההזמנה שקיבלתם, כדי שנוכל לשייך את התשלום להזמנה.</li>
+        <li>ההזמנה נכנסת לייצור רק אחרי שאישרנו שהתשלום התקבל. קבלה נשלחת מ-Grow ב-SMS או במייל.</li>
+      </ul>
+
+      <h2>זמני ייצור ומשלוח</h2>
+      <ul>
+        <li>
+          תוך <bdi dir="ltr" data-config="deliveryDays">[מספר]</bdi> ימי עסקים מרגע ההזמנה היא יוצאת למשלוח, או מוכנה לאיסוף.
+          אם יהיה עיכוב, נעדכן.
+        </li>
+        <li>איסוף עצמי מ<span data-config="pickupFrom">[מקום]</span>, בתיאום מראש, ללא תשלום. נתאם איתכם מועד כשההזמנה מוכנה.</li>
+        <li>
+          או משלוח לנקודת האיסוף הקרובה לכתובת שמסרתם בהזמנה, בתוספת דמי משלוח. כשההזמנה נשלחת נודיע לכם לאיזו נקודה.
+          <span class="todo">לבדיקה: חברת המשלוחים, וכמה זמן ההזמנה מחכה בנקודת האיסוף.</span>
+        </li>
+      </ul>
+
+      <h2>ביטול הזמנה</h2>
+      <ul>
+        <li>אפשר לבטל את ההזמנה ולקבל החזר מלא עד שמתחילים לייצר אותה. כדי לבטל, פנו אלינו עם מספר ההזמנה.</li>
+        <li>
+          כל פסלון מיוצר במיוחד לפי התמונות שלכם, ולכן אחרי תחילת הייצור אי אפשר לבטל את ההזמנה.
+          <span class="todo">לבדיקה עם עורך דין: החריג לזכות הביטול בטובין שיוצרו במיוחד בשביל הצרכן, לפי חוק הגנת הצרכן ותקנות הביטול.</span>
+        </li>
+        <li>פסלון שהגיע שבור או פגום: שלחו לנו תמונה שלו תוך [7] ימים מקבלתו, ונדפיס אותו מחדש או נחזיר את הכסף.</li>
+      </ul>
+
+      <h2>בטיחות</h2>
+      <ul>
+        <li class="warning">לא מתאים לילדים מתחת לגיל 3: הפסלון עלול להכיל חלקים קטנים, וחלקים דקים עלולים להישבר. סכנת חנק.</li>
+        <li>PLA הוא פלסטיק קשיח ושביר יחסית. לא לזרוק ולא לכופף, ולא להשאיר בשמש, ברכב חם או ליד מקור חום: הוא מתרכך בסביבות 55 מעלות.</li>
+        <li>הפסלון נועד לתצוגה ולמשחק עדין בהשגחת מבוגר. לא למגע עם מזון ולא להכנסה לפה.</li>
+        <li><span class="todo">לבדיקה עם עורך דין: האם הצעצוע לפי ציור נחשב "צעצוע" לפי התקן הישראלי ת"י 562, ומה נדרש בסימון ובאזהרות.</span></li>
+      </ul>
+
+      <h2>פרטיות</h2>
+      <ul>
+        <li>
+          <strong>מה נאסף:</strong> שם מלא, טלפון, אימייל, הכתובת (במשלוח לנקודת איסוף), שמות החיות או הדמויות והערות
+          (אם כתבתם), התמונות ששלחתם, הפסלונים שהוזמנו והמחיר, ופרטי הדפדפן (User-Agent) שנשלחים עם ההזמנה.
+        </li>
+        <li>
+          <strong>איפה זה נשמר:</strong> ההזמנה והתמונות נשמרות בשירות Supabase, בשרתים באיחוד האירופי (פרנקפורט, גרמניה),
+          ומשם מועתקות למחשב שלנו לצורך הייצור. התמונות נמחקות מהאחסון בענן (Supabase) כשההזמנה הושלמה או בוטלה,
+          ו-14 יום אחרי שליחת הזמנה שלא שולמה.
+        </li>
+        <li>
+          <strong>מי עוד רואה:</strong> כדי להכין את המודל, התמונה עצמה (בלי הפרטים האישיים) נשלחת לשירותים חיצוניים ליצירת מודלים בתלת־ממד:
+          Meshy, ובציורים גם Google Gemini. התשלום מתבצע אצל Grow, לפי מדיניות הפרטיות שלהם. במשלוח לנקודת איסוף נמסור לחברת המשלוחים את השם, הטלפון והכתובת.
+          <span class="todo">לבדיקה: לוודא שרשימת השירותים מעודכנת.</span>
+        </li>
+        <li><strong>למה:</strong> רק כדי לייצר ולשלוח את ההזמנה, לתת שירות ולעמוד בחובות החשבונאיות. לא נמכור את הפרטים ולא נשתמש בהם לפרסום.</li>
+        <li>
+          <strong>כמה זמן:</strong> את פרטי ההזמנה, ואת עותק התמונות שבמחשב שלנו, נשמור עד [מספר] חודשים ואז נמחק אותם,
+          מלבד מה שהחוק מחייב לשמור (למשל חשבוניות).
+          <span class="todo">לבדיקה: את המחיקה הזו עושים ידנית (שורות ההזמנה ב-Supabase והעותקים במחשב). Life2Print מוחק בעצמו רק את התמונות מהאחסון בענן.</span>
+        </li>
+        <li>
+          <strong>הזכויות שלכם:</strong> אפשר לבקש לעיין בפרטים, לתקן אותם או למחוק אותם (כשאין חובה לשמור אותם):
+          פנו אלינו באימייל <bdi data-config="contact.email">[אימייל]</bdi><span data-if="contact.phone"> או בטלפון <bdi data-config="contact.phone">[טלפון]</bdi></span>.
+        </li>
+        <li><strong>ציורים של ילדים:</strong> נא לצלם רק את הציור, בלי הילד/ה ובלי שם מלא על הדף.</li>
+      </ul>
+
+      <h2>שונות</h2>
+      <ul>
+        <li>אנחנו עשויים לעדכן את התנאים. על כל הזמנה חלים התנאים שהיו בתוקף כשהיא נשלחה.</li>
+        <li><span class="todo">לבדיקה עם עורך דין: הדין החל וסמכות השיפוט.</span></li>
+      </ul>
+
+      <p><a href="./">חזרה לעמוד ההזמנה</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <p>© Figure It</p>
+  </footer>
+</body>
+</html>

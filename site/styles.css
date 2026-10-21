@@ -1,0 +1,462 @@
+/* Figure It order site: plain white cards, with colourful toy bricks as the accents. Shared by both pages. */
+
+:root {
+  /* Brick colours are the same in both themes, like the toys. Text on them passes WCAG AA (4.5:1). */
+  --brick-red: #c91a09;
+  --brick-yellow: #f2cd37;
+  --brick-blue: #0055bf;
+  --brick-green: #237841;
+  --on-brick: #ffffff;
+  --on-yellow: #1b1a17;
+  --ink: #1b1a17;
+  --paper: #f5f2ea;
+  --card: #ffffff;
+  --muted: #5d5a53;
+  --border: #e3ded3; /* card edges: decoration only */
+  --field-border: #8c877c; /* input and choice edges: 3:1 against the card, so they read as fields */
+  --focus: #0055bf;
+  --check: #237841; /* the consent checkbox */
+  --error: #b3261e;
+  --link: #0050b3;
+  --radius: 14px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f2efe8;
+    --paper: #141519;
+    --card: #1f2127;
+    --muted: #aeaaa1;
+    --border: #33363e;
+    --field-border: #7d808b;
+    --focus: #8ab4ff;
+    --check: #3fa865;
+    --error: #ff9b91;
+    --link: #8ab4ff;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem/1.6 Fredoka, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+h1, h2, h3 { line-height: 1.25; font-weight: 600; }
+h2 { font-size: 1.35rem; margin: 0 0 12px; }
+h3 { font-size: 1.15rem; margin: 22px 0 8px; }
+h2[tabindex="-1"]:focus { outline: none; }
+a { color: var(--link); text-underline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.site-header, main, .site-footer {
+  max-inline-size: 720px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+/* ---------- Bricks ---------- */
+
+/* A solid brick with a darker bottom edge; a selected product card turns into one. */
+.brick, .choice:has(:checked) {
+  position: relative;
+  background: var(--brick);
+  color: var(--on-brick);
+  border-color: transparent;
+  border-radius: 10px;
+  box-shadow: inset 0 -5px 0 rgb(0 0 0 / 0.22), inset 0 2px 0 rgb(255 255 255 / 0.2);
+}
+
+/* The studs: a row of rounded bumps along the top edge, one per background repeat. `round` fits a whole
+   number of them, so a step brick gets 2–4 and a long button more, like a longer brick. */
+.brick::before, .choice:has(:checked)::before {
+  content: "";
+  position: absolute;
+  inset-inline: var(--stud-inset, 12px);
+  inset-block-end: 100%;
+  block-size: var(--stud-height, 8px);
+  background: radial-gradient(30% 100% at 50% 100%, var(--brick) 94%, transparent 100%)
+    0 0 / var(--stud-pitch, 48px) 100% round no-repeat;
+}
+
+.red { --brick: var(--brick-red); }
+.yellow { --brick: var(--brick-yellow); --on-brick: var(--on-yellow); }
+.blue { --brick: var(--brick-blue); }
+.green { --brick: var(--brick-green); }
+
+/* ---------- Header ---------- */
+
+.site-header { padding-block: 28px 4px; }
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 8px;
+}
+
+.brand-name { font-size: 1.9rem; font-weight: 700; }
+
+/* Three small bricks: red and yellow standing on a blue one. */
+.logo {
+  display: grid;
+  grid-template-columns: repeat(2, 20px);
+  column-gap: 2px;
+  padding-block-start: 5px;
+}
+.logo .brick {
+  block-size: 16px;
+  border-radius: 4px;
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.22);
+  --stud-pitch: 7px;
+  --stud-height: 4px;
+  --stud-inset: 3px;
+}
+.logo .blue { grid-column: 1 / -1; }
+.logo .blue::before { content: none; } /* hidden under the bricks above */
+
+.tagline { margin: 6px 0 0; color: var(--muted); font-size: 1.05rem; }
+
+main {
+  display: grid;
+  gap: 20px;
+  padding-block: 20px 32px;
+}
+
+/* ---------- How it works ---------- */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.steps li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 96px;
+  margin-block-start: 7px;
+  padding: 10px 8px 15px;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.step-n { font-size: 1.7rem; font-weight: 700; line-height: 1.15; }
+.nowrap { white-space: nowrap; }
+.step-note { display: block; margin-block-start: 4px; font-size: 0.85rem; font-weight: 400; }
+
+/* ---------- Cards and notices ---------- */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+}
+
+@media (min-width: 560px) {
+  .card { padding: 24px; }
+}
+
+.notice { margin: 0; border-inline-start: 6px solid var(--brick-yellow); }
+noscript .notice { padding: 10px 14px; border-radius: 10px; background: var(--paper); }
+
+/* ---------- Form ---------- */
+
+/* min-inline-size: 0 because a fieldset is min-content wide by default, which can push the page sideways. */
+.plain { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+#fields:disabled { opacity: 0.65; } /* closed, or locked while the order is saved */
+legend { padding: 0; margin-block-end: 4px; font-size: 1.1rem; font-weight: 600; }
+
+.field { position: relative; margin-block-start: 20px; }
+.group { margin-block-start: 26px; }
+label, .label { display: block; margin: 0 0 6px; font-weight: 600; }
+.optional { color: var(--muted); font-weight: 400; }
+.hint { margin: 4px 0 0; color: var(--muted); font-size: 0.95rem; }
+.tip { color: var(--ink); }
+
+input[type="text"], input[type="tel"], input[type="email"], textarea {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 48px;
+  padding: 10px 12px;
+  font: inherit; /* 16 px or more, so iOS doesn't zoom in on focus */
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--field-border);
+  border-radius: 10px;
+}
+textarea { resize: vertical; }
+input[dir="ltr"] { text-align: right; } /* typed left to right, lined up with the labels */
+input[aria-invalid="true"], textarea[aria-invalid="true"], .choice:has([aria-invalid="true"]) { border-color: var(--error); }
+
+/* Product cards: real radios inside labels. */
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 60px;
+  margin: 14px 0 0;
+  padding: 12px 16px;
+  background: var(--card);
+  border: 2px solid var(--field-border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.choice.pet { --brick: var(--brick-red); }
+.choice.drawing { --brick: var(--brick-blue); }
+.choice.pickup { --brick: var(--brick-yellow); --on-brick: var(--on-yellow); }
+.choice.pickup-point { --brick: var(--brick-green); }
+.choice:has(:checked) { padding-block-end: 15px; }
+.choice:has(:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.choice input {
+  appearance: none;
+  flex: none;
+  inline-size: 24px;
+  block-size: 24px;
+  margin: 0;
+  background: var(--card);
+  border: 2px solid var(--field-border);
+  border-radius: 50%;
+}
+.choice input:checked {
+  border-color: #fff;
+  background: radial-gradient(circle closest-side, #1b1a17 50%, #fff 56%);
+}
+.choice input:focus-visible { outline: none; } /* the card shows the ring */
+.choice .price { margin-inline-start: auto; font-weight: 700; white-space: nowrap; }
+.choices .hint { margin-block-start: 10px; }
+
+/* Figurines: one bordered block each, numbered, with the add button after the last. */
+.price-hint { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.figurines { list-style: none; margin: 0; padding: 0; }
+.figurine {
+  margin-block-start: 20px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+}
+.figurine .choices legend { font-size: 1rem; }
+.figurine-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.figurine-title { margin: 0; font-size: 1.2rem; }
+.figurine-title:focus { outline: none; }
+.add-figurine { margin-block-start: 16px; }
+.add-figurine .hint { margin-block-start: 8px; }
+
+/* A text-styled button with a 44 px tap target. */
+.link-button {
+  min-block-size: 44px;
+  padding: 0 4px;
+  font: inherit;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Photos */
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.visually-hidden:focus + .file-button { outline: 3px solid var(--focus); outline-offset: 2px; }
+.visually-hidden[aria-invalid="true"] + .file-button { border-color: var(--error); }
+.file-button { margin-block-start: 12px; }
+.photo-status { overflow-wrap: anywhere; } /* a failed photo's file name can be one long word */
+.photo-status:empty { display: none; }
+
+.thumbs {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.thumbs:empty { display: none; }
+.thumbs li { position: relative; }
+.thumbs img {
+  display: block;
+  inline-size: 96px;
+  block-size: 96px;
+  object-fit: cover;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+/* A 44 px tap target drawn as a smaller dark circle. */
+.thumb-remove {
+  position: absolute;
+  inset-block-start: -12px;
+  inset-inline-end: -12px;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  font: 700 1.25rem/1 system-ui, sans-serif;
+  color: var(--card);
+  background: radial-gradient(circle closest-side, var(--ink) 68%, transparent 72%);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Consent */
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-block-size: 44px;
+  padding-block: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.check input {
+  flex: none;
+  inline-size: 22px;
+  block-size: 22px;
+  margin: 2px 0 0;
+  accent-color: var(--check);
+}
+
+.field-error { margin: 6px 0 0; color: var(--error); font-weight: 500; }
+
+/* Rendered while empty, so screen readers track it as a live region from the start. */
+.form-alert {
+  margin-block-start: 22px;
+  padding: 10px 14px;
+  color: var(--error);
+  font-weight: 600;
+  border-inline-start: 5px solid var(--error);
+}
+.form-alert:empty { margin: 0; padding: 0; border: 0; }
+
+.total { margin: 22px 0 0; font-size: 1.1rem; }
+.total strong { font-size: 1.25rem; }
+
+.status { margin: 12px 0 0; }
+.status:empty { margin: 0; }
+.status.error, .photo-status.error { color: var(--error); }
+
+/* ---------- Buttons ---------- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 48px;
+  padding: 10px 20px;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--field-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.button.brick {
+  margin-block-start: 8px; /* room for the studs */
+  padding-block-end: 14px;
+  color: var(--on-brick);
+  background: var(--brick);
+  border: 0;
+  transition: transform 80ms ease-out;
+}
+.button.brick:active:not(:disabled) { transform: translateY(2px); }
+.button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.submit {
+  inline-size: 100%;
+  min-block-size: 58px;
+  margin-block-start: 24px;
+  font-size: 1.15rem;
+}
+
+@media (min-width: 560px) {
+  .submit { inline-size: auto; padding-inline: 44px; }
+}
+
+/* ---------- Confirmation and the pending order ---------- */
+
+.pay { margin-block: 4px 18px; }
+.pay p { margin-block: 10px 0; }
+.pay-steps { margin: 6px 0 0; padding-inline-start: 22px; }
+.pay-steps li { margin-block-start: 4px; }
+
+.code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-block: 18px 6px;
+}
+.code-row .label { flex-basis: 100%; margin: 0; }
+.code {
+  margin: 8px 0 0;
+  padding: 6px 24px 12px;
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+.inline-code { font-weight: 700; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  padding-block: 4px 36px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.site-footer p { margin: 4px 0; }
+
+/* ---------- Terms page ---------- */
+
+.legal h1 { font-size: 1.7rem; margin: 0 0 4px; }
+.legal h2 { font-size: 1.2rem; margin: 28px 0 8px; }
+.legal p, .legal li { line-height: 1.7; }
+.legal ul { margin: 8px 0; padding-inline-start: 22px; }
+.legal .warning { font-weight: 600; }
+/* Notes for whoever completes the template; they must be gone before it's published. */
+.todo {
+  padding: 0 4px;
+  color: var(--muted);
+  border: 1px dashed var(--field-border);
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+  .button.brick:active:not(:disabled) { transform: none; }
+}
