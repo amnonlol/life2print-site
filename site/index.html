@@ -16,8 +16,22 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&display=swap">
   <link rel="stylesheet" href="styles.css?v=__V__">
+  <!-- The closed notice is shown by default so a broken config.js reads as closed; without JS the form's own note explains.
+       While app.js loads, `opening` keeps it out of sight, or it flashes on every load until app.js hides it. A script
+       that fails to load or throws ends the wait at once (an import that fails fires `error` on the script element,
+       which doesn't bubble, hence the capture), and one that never arrives ends it after 6 s. -->
+  <script>
+    {
+      const root = document.documentElement;
+      const stopWaiting = () => root.classList.remove('opening');
+      root.classList.add('opening');
+      addEventListener('error', (event) => {
+        if (event.target === window || event.target instanceof HTMLScriptElement) stopWaiting();
+      }, true);
+      setTimeout(stopWaiting, 6000);
+    }
+  </script>
   <script type="module" src="app.js?v=__V__"></script>
-  <!-- The closed notice is shown by default so a broken config.js reads as closed; without JS the form's own note explains. -->
   <noscript><style>#closed-notice { display: none; }</style></noscript>
 </head>
 <body>
@@ -154,8 +168,7 @@
           </div>
           <div class="field">
             <label for="phone">טלפון</label>
-            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" maxlength="20" data-field="phone" aria-describedby="phone-hint phone-error">
-            <p id="phone-hint" class="hint">אם מישהו אחר משלם, חשוב להזין את מספר ההזמנה בעמוד התשלום.</p>
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" maxlength="20" data-field="phone" aria-describedby="phone-error">
             <p id="phone-error" class="field-error" hidden></p>
           </div>
           <div class="field">

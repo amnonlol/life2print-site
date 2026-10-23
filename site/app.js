@@ -163,8 +163,9 @@ function init() {
   if (PAID_RETURN.test(location.search)) showThanks(saved);
   else showPending(saved);
   // index.html starts closed (notice shown, fields disabled), so a config.js or app.js that fails to load leaves
-  // a closed page rather than a form that can't be sent.
+  // a closed page rather than a form that can't be sent. Its notice waits for this line (`opening`), so it doesn't flash.
   el.closed.hidden = site.open;
+  document.documentElement.classList.remove('opening');
   el.fields.disabled = !site.open;
   updateDelivery();
   updateSubmit();
@@ -1023,7 +1024,7 @@ function renderPayment(container, order, { quiet = false } = {}) {
     pay,
     make('p', { className: 'hint', textContent: 'בעמוד התשלום:' }),
     steps,
-    make('p', { className: 'hint', textContent: 'כדאי גם לצלם מסך של המספר, ולשלם עם אותו שם ואותו טלפון.' }),
+    make('p', { className: 'hint', textContent: 'כדאי גם לצלם מסך את המספר, ולשלם עם אותו שם ואותו טלפון.' }),
   );
 }
 

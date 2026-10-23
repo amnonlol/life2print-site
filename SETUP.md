@@ -112,14 +112,14 @@ customer pays on. They choose the products, quantities, shipping and coupon the 
 and they type the order number in. In Grow's dashboard, under payment links, create (or edit) a **fixed page** (עמוד
 קבוע) with (this is how the page was set up on 2026-10-23):
 
-- **A product per kind of figurine**, each ₪160 with a quantity choice (0–10): "פסלון בודד של חיית מחמד" and "פסלון
-  בודד של ציור ילדים".
+- **A product per kind of figurine**, each ₪160 with a quantity choice (0–10): "פסלון של חיית מחמד" and "פסלון
+  של ציור ילדים".
 - **Shipping** (Grow's "משלוח" field, required): "איסוף עצמי" at ₪0 and "משלוח" at ₪25, the site's self-pickup and
   delivery to a pickup point.
 - **A coupon for 2 or more figurines** ("FIGURE10"). It must bring Grow's total to the site's: `prices.each` per
   figurine (₪150), so ₪10 off each figurine.
 - **The names go in `site/config.js`** (step 8), exactly as Grow shows them, so the confirmation can say "choose
-  "פסלון בודד של חיית מחמד", quantity 2, and "פסלון בודד של ציור ילדים", quantity 1; in "משלוח" choose "משלוח"; enter
+  "פסלון של חיית מחמד", quantity 2, and "פסלון של ציור ילדים", quantity 1; in "משלוח" choose "משלוח"; enter
   the coupon FIGURE10". Grow can't stop a wrong choice, so the site also shows the total to check, and you compare the
   amount paid with the order's total in Life2Print. The prices shown include VAT.
 - **No open amount** (סכום פתוח off).
@@ -153,7 +153,7 @@ export const CONFIG = {
   pickupFrom: 'גבעתיים',                                             // where self-pickup is
   prices: { one: 160, each: 150, pickupPoint: 25 },                  // see below
   growUrl: 'https://pay.grow.link/…',
-  growItems: { pet: 'פסלון בודד של חיית מחמד', drawing: 'פסלון בודד של ציור ילדים' },
+  growItems: { pet: 'פסלון של חיית מחמד', drawing: 'פסלון של ציור ילדים' },
   growShipping: { pickup: 'איסוף עצמי', pickup_point: 'משלוח' },
   growCoupon: 'FIGURE10',
 };
@@ -308,7 +308,7 @@ you deliberately want it reachable from your network, and only on a network you 
 
 Do this once before announcing the site, and again after changing the Grow pages.
 
-1. In Grow, set the "פסלון בודד של חיית מחמד" product's price to **₪1** for the test.
+1. In Grow, set the "פסלון של חיית מחמד" product's price to **₪1** for the test.
 2. On the published site, on your phone, place an order of one pet figurine with 3 photos straight from the camera and
    self-pickup, and pay with a real card on the Grow page, choosing what the confirmation names and typing the order
    number into "מספר הזמנה".

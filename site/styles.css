@@ -180,6 +180,8 @@ main {
 
 .notice { margin: 0; border-inline-start: 6px solid var(--brick-yellow); }
 noscript .notice { padding: 10px 14px; border-radius: 10px; background: var(--paper); }
+/* Out of sight until app.js has decided (index.html's `opening`): it would otherwise flash on every load. */
+.opening #closed-notice { display: none; }
 
 /* ---------- Examples ---------- */
 

@@ -25,7 +25,7 @@ export const CONFIG = {
   growUrl: 'https://pay.grow.link/ODk4MzY~68267c6b7a5865d8622f76347cf65e80-NDE0OTU0OQ',
   // What the Grow page calls things, exactly as Grow shows them, so the confirmation can say what to choose there
   // (SETUP §7). A name left '' leaves its step out, and the confirmation still gives the total and the order number.
-  growItems: { pet: 'פסלון בודד של חיית מחמד', drawing: 'פסלון בודד של ציור ילדים' }, // its product per kind
+  growItems: { pet: 'פסלון של חיית מחמד', drawing: 'פסלון של ציור ילדים' }, // its product per kind
   growShipping: { pickup: 'איסוף עצמי', pickup_point: 'משלוח' },                       // its "משלוח" field's options
   growCoupon: 'FIGURE10',                                                               // the discount for 2 or more
 };

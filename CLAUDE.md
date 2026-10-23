@@ -78,6 +78,9 @@ The only dependency is `@electric-sql/pglite`, pinned to exactly 0.5.8 (a devDep
      config.js or app.js that fails to load leaves the notice, not a form that looks open but can't be sent. The usual
      cause is a Hebrew abbreviation typed with an ASCII apostrophe inside `'…'` (`'רח' הרצל'`): config.js's header and
      SETUP step 8 say to use ׳ and ״ or backticks, and `npm run check` and deploy.yml catch it.
+     While app.js loads, an inline script in index.html's head puts `opening` on `<html>`, which hides the notice (it
+     flashed on every load until 2026-10-23); init() removes it. A script `error` (a failed fetch or import, a syntax
+     error, init() throwing) removes it at once, and a 6 s timeout if app.js never arrives.
 2. **Figurines:** `ol#figurines`, one `li.figurine` per figurine cloned from `template#figurine-template` (`addFigurine`).
    Each has a key (`fig1`, `fig2`, …, never reused) that names its ids, radio group and field keys (`fig2-kind`,
    `fig2-photos`, `fig2-subject`, `fig2-personality`), so errors and labels never mix; its number on the page (`פסלון 2`)
@@ -267,7 +270,7 @@ Why it's built this way:
   the customer what to choose there and the total to check. Grow can't stop a wrong choice, so the operator compares the
   amount paid with the order's total in Life2Print.
 - **The owner's page as of 2026-10-23,** read from the page's embedded JSON (`pageData`) in headless Chrome:
-  - products "פסלון בודד של חיית מחמד" and "פסלון בודד של ציור ילדים", ₪160 each, quantity 0–10;
+  - products "פסלון של חיית מחמד" and "פסלון של ציור ילדים", ₪160 each, quantity 0–10;
   - Grow's shipping field "משלוח" (required): "איסוף עצמי" ₪0, "משלוח" ₪25;
   - its description says to use coupon **FIGURE10** for more than one figurine (Grow's coupon box sits behind "יש לי קוד
     קופון!", which a script couldn't open, so the discount it gives is unconfirmed);
@@ -276,7 +279,9 @@ Why it's built this way:
     הכסף"), not a template leftover; `success_url` empty (no thank-you redirect), and no terms link seen.
 - **Matching:** Grow's dashboard searches name, email, phone, transaction number and card digits, not custom fields. Whether
   "מספר הזמנה" shows in the transaction details, the export or the receipt is **unverified**: SETUP.md step 12's ₪1 test should
-  answer it; record the answer here. The payer may not be the customer, so the code is the surest match.
+  answer it; record the answer here. Someone other than the customer paying isn't supported (the owner's decision,
+  2026-10-23): the form says nothing about it (a hint under the phone did until then), and the confirmation asks them to
+  pay with the same name and phone. Automatic confirmation (below) is the planned way to match every payment.
 - **The thank-you redirect** from a dashboard-made page carries nothing documented (the API flow adds `&response=success`).
 - **Automating confirmation later:** our server function calls `createPaymentProcess` (userId, pageCode, sum, `successUrl`,
   `notifyUrl`, the code in a `cField`), Grow form-posts the result to `notifyUrl` (not JSON), and we answer 200 and call
