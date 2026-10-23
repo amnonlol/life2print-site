@@ -102,7 +102,7 @@ if (config && typeof config === 'object') {
   if (config.supabaseUrl && !httpsLink(config.supabaseUrl)) {
     warn('supabaseUrl should be the project URL, https://<ref>.supabase.co. Orders stay closed until it is.');
   }
-  for (const key of ['one', 'each', 'pickupPoint']) {
+  for (const key of ['figurine', 'pickupPoint']) {
     const price = config.prices?.[key] ?? null;
     if (price !== null && !(Number.isFinite(price) && price >= 0 && price < 100_000)) {
       warn(`prices.${key} must be a plain number such as 160, without quotes, or null. The page treats it as not set.`);
@@ -120,18 +120,6 @@ if (config && typeof config === 'object') {
   }
   const shipping = ['pickup', 'pickup_point'].filter((key) => config.growShipping?.[key]?.trim?.());
   if (shipping.length === 1) warn('growShipping names only one of the Grow page\'s two shipping options.');
-  // The coupon is how Grow charges the lower price for 2 or more, so the two go together.
-  const { one = null, each = null } = config.prices ?? {};
-  const discounted = Number.isFinite(one) && Number.isFinite(each) && each < one;
-  const coupon = Boolean(config.growCoupon?.trim?.());
-  if (discounted && !coupon) {
-    warn('prices.each is lower than prices.one but growCoupon is empty: customers with 2 or more figurines aren\'t told how '
-      + 'to get that price on Grow, and Grow charges them more than the site shows.');
-  }
-  if (coupon && !discounted) {
-    warn('growCoupon is set but prices.each isn\'t lower than prices.one: the confirmation leaves the coupon step out, since '
-      + 'the total it shows has no discount.');
-  }
 }
 
 if (failed) process.exit(1);

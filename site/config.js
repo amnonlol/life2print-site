@@ -16,8 +16,7 @@ export const CONFIG = {
 
   // Prices in ₪: a plain number such as 160, no quotes. null hides it (and the totals that need it).
   prices: {
-    one: 160,          // an order of a single figurine
-    each: 150,         // each figurine in an order of 2 or more (null: the same as one)
+    figurine: 160,     // each figurine, however many are ordered
     pickupPoint: 25,   // delivery to a pickup point; self-pickup is free
   },
 
@@ -27,5 +26,4 @@ export const CONFIG = {
   // (SETUP §7). A name left '' leaves its step out, and the confirmation still gives the total and the order number.
   growItems: { pet: 'פסלון של חיית מחמד', drawing: 'פסלון של ציור ילדים' }, // its product per kind
   growShipping: { pickup: 'איסוף עצמי', pickup_point: 'משלוח' },                       // its "משלוח" field's options
-  growCoupon: 'FIGURE10',                                                               // the discount for 2 or more
 };

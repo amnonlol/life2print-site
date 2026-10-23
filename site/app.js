@@ -199,11 +199,10 @@ function readConfig(config) {
     businessName: text(config?.business?.name),
     deliveryDays: text(config?.deliveryDays),
     pickupFrom: text(config?.pickupFrom),
-    prices: { one: price('one'), each: price('each'), pickupPoint: price('pickupPoint') },
+    prices: { figurine: price('figurine'), pickupPoint: price('pickupPoint') },
     growUrl,
     growItems: { pet: text(config?.growItems?.pet), drawing: text(config?.growItems?.drawing) },
     growShipping: { pickup: text(config?.growShipping?.pickup), pickup_point: text(config?.growShipping?.pickup_point) },
-    growCoupon: text(config?.growCoupon),
   };
   if (settings.key && !isPublishableKey(settings.key)) {
     console.error('config.js: supabasePublishableKey is a secret key, which bypasses every database rule. Orders stay '
@@ -259,11 +258,9 @@ function authHeaders() {
 
 /** Prices, delivery time, contact details and the business name, wherever the page shows them. */
 function fillFromConfig() {
-  const { one, each, pickupPoint } = site.prices;
-  if (one !== null) {
-    el.priceHint.textContent = each !== null && each !== one
-      ? `${shekels.format(one)} לפסלון. בהזמנה של 2 פסלונים ומעלה, ${shekels.format(each)} לכל פסלון.`
-      : `${shekels.format(one)} לפסלון.`;
+  const { figurine, pickupPoint } = site.prices;
+  if (figurine !== null) {
+    el.priceHint.textContent = `${shekels.format(figurine)} לפסלון.`;
     el.priceHint.hidden = false;
   }
   if (pickupPoint !== null) {
@@ -315,15 +312,9 @@ function make(tag, properties) {
 
 // ---------- Prices ----------
 
-/** What each figurine costs in an order of `count`, or null if that price isn't set. */
-function unitPrice(count) {
-  const { one, each } = site.prices;
-  return count > 1 && each !== null ? each : one;
-}
-
 /** The figurines plus delivery to a pickup point, or null if a price it needs isn't set. */
 function orderTotal(count, delivery) {
-  const unit = unitPrice(count);
+  const unit = site.prices.figurine;
   const shipping = delivery === 'pickup_point' ? site.prices.pickupPoint : 0;
   if (unit === null || shipping === null) return null;
   return Math.round((unit * count + shipping) * 100) / 100;
@@ -338,7 +329,7 @@ function updateTotal() {
   const total = orderTotal(count, shipped ? 'pickup_point' : 'pickup');
   el.total.hidden = total === null;
   if (total === null) return;
-  const unit = unitPrice(count);
+  const unit = site.prices.figurine;
   const parts = [count > 1 ? `${count} פסלונים, ${shekels.format(unit)} לפסלון` : `פסלון ${shekels.format(unit)}`];
   if (shipped) parts.push(`משלוח לנקודת איסוף ${shekels.format(site.prices.pickupPoint)}`);
   el.total.replaceChildren(make('strong', { textContent: `סה״כ ${shekels.format(total)}` }));
@@ -1030,10 +1021,10 @@ function renderPayment(container, order, { quiet = false } = {}) {
 
 /**
  * What to choose on Grow's page before the total, as steps (each a list of nodes): its product for each kind of
- * figurine with the quantity, its shipping option, and the coupon for an order of 2 or more. A step is left out
- * when config.js doesn't name what it needs, or (for an order stored before `kinds` was kept) the order doesn't say.
+ * figurine with the quantity, and its shipping option. A step is left out when config.js doesn't name what it
+ * needs, or (for an order stored before `kinds` was kept) the order doesn't say.
  */
-function growSteps({ count, kinds, delivery }) {
+function growSteps({ kinds, delivery }) {
   const quoted = (name) => make('bdi', { textContent: `"${name}"` });
   const steps = [];
   const lines = Object.entries(kinds ?? {}).filter(([, n]) => n > 0).map(([kind, n]) => [site.growItems[kind], n]);
@@ -1042,12 +1033,6 @@ function growSteps({ count, kinds, delivery }) {
   }
   const shipping = site.growShipping[delivery];
   if (shipping) steps.push(['בשדה "משלוח" בוחרים ', quoted(shipping), '.']);
-  // Only while the site's own price for 2 or more is lower: the coupon is what makes Grow's total match it.
-  const { one, each } = site.prices;
-  if (count > 1 && site.growCoupon && one !== null && each !== null && each < one) {
-    steps.push(['לוחצים "יש לי קוד קופון!" ומזינים ',
-      make('bdi', { dir: 'ltr', className: 'inline-code', textContent: site.growCoupon }), ', ההנחה להזמנה של 2 פסלונים ומעלה.']);
-  }
   return steps;
 }
 

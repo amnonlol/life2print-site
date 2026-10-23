@@ -10,6 +10,7 @@ everything in `site/`.
 Built on 2026-10-18 from one design spec by four agents working in parallel: the site (`site/`), this repo's schema, tests,
 scripts and docs, and Life2Print's server and Orders tab. On 2026-10-22 an order went from one figurine to 1–10 (`items`),
 the delivery choice was added, the prices became per order size, and the brand became Figure It (the owner's choices).
+On 2026-10-23 the price for 2 or more and its Grow coupon were dropped: every figurine costs the same.
 **The docs were written alongside the code, not after it**: check what they say against the code, and fix whichever is
 wrong. As of 2026-10-22 the owner had created the Supabase project and run the first version of schema.sql, and Life2Print
 syncs from it; nothing had run against a real Grow page or GitHub Pages yet (see Open questions). See README.md for the
@@ -61,19 +62,17 @@ The only dependency is `@electric-sql/pglite`, pinned to exactly 0.5.8 (a devDep
 
 1. **Config:** `site/config.js` (an ES module, committed). Orders are closed ("ההזמנות ייפתחו בקרוב", `console.warn` naming
    what's missing) until it has the URL (https, or http on localhost for a mock), the publishable key and a contact phone or
-   email. `prices` (`one`: a single figurine; `each`: per figurine in an order of 2 or more; `pickupPoint`: delivery),
-   `growUrl` (one Grow page for every order), `growItems` (its product per kind), `growShipping` (its "משלוח" field's two
-   options) and `growCoupon` (the discount code for 2+), so the confirmation can say what to choose, `pickupFrom`,
-   `deliveryDays`, `business`. No `growUrl`: the confirmation says we'll be in touch. A `growUrl`
+   email. `prices` (`figurine`: each figurine, however many; `pickupPoint`: delivery), `growUrl` (one Grow page for
+   every order), `growItems` (its product per kind) and `growShipping` (its "משלוח" field's two options), so the
+   confirmation can say what to choose, `pickupFrom`, `deliveryDays`, `business`. No `growUrl`: the confirmation says
+   we'll be in touch. A `growUrl`
    that isn't an absolute https link, or a price that isn't a plain number, counts as unset, with a `console.warn` (and a
    warning from `npm run check`).
-   - **Prices:** total = `one` for one figurine, `each × n` for n ≥ 2 (or `one × n` if `each` is null), plus `pickupPoint`
-     for delivery (`orderTotal`). The form shows it live under the fields (`#total`), and the row stores it as `price_ils`.
+   - **Prices:** total = `figurine × n`, plus `pickupPoint` for delivery (`orderTotal`). The form shows it live under the
+     fields (`#total`), and the row stores it as `price_ils`.
    - **Grow steps** on the confirmation and the pending panel (`renderPayment`, `growSteps`): the product for each kind
      with its quantity (only when `growItems` names every kind in the order; the stored order keeps `kinds` for this), the
-     shipping option, the coupon for 2 or more (only while `prices.each` is below `prices.one`: the coupon is what makes
-     Grow's total match the discounted one; `npm run check` warns when the two disagree), then always the total to check
-     and the code to paste into "מספר הזמנה".
+     shipping option, then always the total to check and the code to paste into "מספר הזמנה".
    - **Closed is the default in index.html** (the notice visible, `#fields` disabled), and app.js opens the form. So a
      config.js or app.js that fails to load leaves the notice, not a form that looks open but can't be sent. The usual
      cause is a Hebrew abbreviation typed with an ASCII apostrophe inside `'…'` (`'רח' הרצל'`): config.js's header and
@@ -272,8 +271,9 @@ Why it's built this way:
 - **The owner's page as of 2026-10-23,** read from the page's embedded JSON (`pageData`) in headless Chrome:
   - products "פסלון של חיית מחמד" and "פסלון של ציור ילדים", ₪160 each, quantity 0–10;
   - Grow's shipping field "משלוח" (required): "איסוף עצמי" ₪0, "משלוח" ₪25;
-  - its description says to use coupon **FIGURE10** for more than one figurine (Grow's coupon box sits behind "יש לי קוד
-    קופון!", which a script couldn't open, so the discount it gives is unconfirmed);
+  - its description no longer mentions a coupon (it named **FIGURE10** for more than one figurine earlier that day, until
+    the discount was dropped); Grow's own "יש לי קוד קופון!" box is still on the page, and whether FIGURE10 still exists
+    in the dashboard is unknown;
   - fields: full name, mobile phone and email (required), address (optional), "מספר הזמנה" (required, text up to 50);
   - VAT 18% included; title "יצירת פסלונים של ציורי ילדים וחיות מחמד"; the banner is the owner's TV appearance ("דאבל על
     הכסף"), not a template leftover; `success_url` empty (no thank-you redirect), and no terms link seen.
@@ -341,8 +341,8 @@ That sibling site (Vite + supabase-js, a ticket lead form before a Tranzila paym
 
 ## Open questions and next steps
 
-- **Grow page:** the coupon FIGURE10's value is unconfirmed (a script couldn't open Grow's coupon box): it must make
-  2+ figurines cost `prices.each` (₪150) each. Its terms link and thank-you page (`success_url`) weren't set on 2026-10-23.
+- **Grow page:** if the coupon FIGURE10 still exists in Grow's dashboard, it should be deleted (the site no longer has a
+  price for 2 or more). Its terms link and thank-you page (`success_url`) weren't set on 2026-10-23.
 - **Custom domain:** www.figureit.co.il isn't connected yet (SETUP step 10). The mailbox contact@figureit.co.il is on the
   same domain, so its MX records must survive the DNS change.
 - **₪1 test:** where does "מספר הזמנה" appear in Grow? Does the thank-you redirect land on the `?paid` note?
