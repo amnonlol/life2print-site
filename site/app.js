@@ -191,9 +191,9 @@ function readConfig(config) {
     pickupFrom: text(config?.pickupFrom),
     prices: { one: price('one'), each: price('each'), pickupPoint: price('pickupPoint') },
     growUrl,
-    growItems: {
-      one: text(config?.growItems?.one), each: text(config?.growItems?.each), pickupPoint: text(config?.growItems?.pickupPoint),
-    },
+    growItems: { pet: text(config?.growItems?.pet), drawing: text(config?.growItems?.drawing) },
+    growShipping: { pickup: text(config?.growShipping?.pickup), pickup_point: text(config?.growShipping?.pickup_point) },
+    growCoupon: text(config?.growCoupon),
   };
   if (settings.key && !isPublishableKey(settings.key)) {
     console.error('config.js: supabasePublishableKey is a secret key, which bypasses every database rule. Orders stay '
@@ -929,7 +929,11 @@ function updateSubmit() {
 
 function showConfirmation(attempt) {
   const { code, items, delivery, price_ils: total } = attempt.row;
-  const order = { code, paymentUrl: site.growUrl, count: items.length, delivery, total, at: Date.now(), paidClaimed: false };
+  const kinds = { pet: 0, drawing: 0 };
+  for (const item of items) kinds[item.kind]++;
+  const order = {
+    code, paymentUrl: site.growUrl, count: items.length, kinds, delivery, total, at: Date.now(), paidClaimed: false,
+  };
   storeOrder(order);
   state.attempt = null;
   setStatus('');
@@ -973,8 +977,7 @@ function renderPayment(container, order, { quiet = false } = {}) {
     item.append(...content);
     steps.append(item);
   };
-  const choice = growChoice(order);
-  if (choice) step('בוחרים ', ...choice, '.');
+  for (const content of growSteps(order)) step(...content);
   if (Number.isFinite(order.total)) step('בודקים שהסכום לתשלום הוא ', make('strong', { textContent: shekels.format(order.total) }), '.');
   // The copy can fail without a sign (in-app browsers often refuse it), and the clipboard may then hold an older
   // code. So the step shows the code and asks to check the paste, rather than promising it was copied.
@@ -989,19 +992,26 @@ function renderPayment(container, order, { quiet = false } = {}) {
 }
 
 /**
- * Which of the Grow page's items to choose, and how many: `"<item>" בכמות 3, ו"<item>" בכמות 1`. Null unless
- * config.js names every item this order needs, and then only the total is given.
+ * What to choose on Grow's page before the total, as steps (each a list of nodes): its product for each kind of
+ * figurine with the quantity, its shipping option, and the coupon for an order of 2 or more. A step is left out
+ * when config.js doesn't name what it needs, or (for an order stored before `kinds` was kept) the order doesn't say.
  */
-function growChoice({ count, delivery }) {
-  if (!Number.isInteger(count) || count < 1) return null;
+function growSteps({ count, kinds, delivery }) {
+  const quoted = (name) => make('bdi', { textContent: `"${name}"` });
+  const steps = [];
+  const lines = Object.entries(kinds ?? {}).filter(([, n]) => n > 0).map(([kind, n]) => [site.growItems[kind], n]);
+  if (lines.length && lines.every(([name]) => name)) {
+    steps.push(['בוחרים ', ...lines.flatMap(([name, n], i) => [i ? ', ו' : '', quoted(name), ` בכמות ${n}`]), '.']);
+  }
+  const shipping = site.growShipping[delivery];
+  if (shipping) steps.push(['בשדה "משלוח" בוחרים ', quoted(shipping), '.']);
+  // Only while the site's own price for 2 or more is lower: the coupon is what makes Grow's total match it.
   const { one, each } = site.prices;
-  const discounted = count > 1 && each !== null && each !== one;
-  const lines = [[discounted ? site.growItems.each : site.growItems.one, count]];
-  if (delivery === 'pickup_point') lines.push([site.growItems.pickupPoint, 1]);
-  if (lines.some(([name]) => !name)) return null;
-  return lines.flatMap(([name, quantity], i) => [
-    i ? ', ו' : '', make('bdi', { textContent: `"${name}"` }), ` בכמות ${quantity}`,
-  ]);
+  if (count > 1 && site.growCoupon && one !== null && each !== null && each < one) {
+    steps.push(['לוחצים "יש לי קוד קופון!" ומזינים ',
+      make('bdi', { dir: 'ltr', className: 'inline-code', textContent: site.growCoupon }), ', ההנחה להזמנה של 2 פסלונים ומעלה.']);
+  }
+  return steps;
 }
 
 // Grow's page asks for the order code and opens in this tab, so the code goes to the clipboard on the way.
@@ -1117,7 +1127,7 @@ function resetPage() {
 // Storage can be missing or throw (private mode, blocked site data). Only the pending panel and the
 // thank-you code depend on it, so failures are ignored.
 
-/** { code, paymentUrl, count, delivery, total, at, paidClaimed }, or null. */
+/** { code, paymentUrl, count, kinds, delivery, total, at, paidClaimed }, or null. */
 function loadOrder() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));

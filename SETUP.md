@@ -108,26 +108,24 @@ retiring them; prefer the new ones.
 ## 7. The Grow payment page
 
 Grow can't take the order number, the amount or the customer's details from a link, so there's one fixed page that every
-customer pays on. They choose the items and quantities the site tells them, Grow adds up the total, and they type the
-order number in. In Grow's dashboard, under payment links, create (or edit) a **fixed page** (עמוד קבוע) with:
+customer pays on. They choose the products, quantities, shipping and coupon the site tells them, Grow adds up the total,
+and they type the order number in. In Grow's dashboard, under payment links, create (or edit) a **fixed page** (עמוד
+קבוע) with (this is how the page was set up on 2026-10-23):
 
-- **Three items, each at a fixed price, each with a quantity choice:**
-
-  | Item (suggested name) | Price | When |
-  |---|---|---|
-  | פסלון אחד | 160 | an order of one figurine (quantity 1) |
-  | פסלון בהזמנה של 2 ומעלה | 150 | each figurine in an order of 2 or more (quantity 2–10) |
-  | משלוח לנקודת איסוף | 25 | delivery to a pickup point (quantity 1); self-pickup has no item |
-
-  The prices must be the ones in `site/config.js` (step 8), and the names go there too, exactly as Grow shows them, so
-  the confirmation can say "choose "פסלון בהזמנה של 2 ומעלה", quantity 3, and "משלוח לנקודת איסוף", quantity 1". Grow
-  can't stop someone choosing the wrong item, so the site also shows the total to check, and you compare the amount paid
-  with the order's total in Life2Print. The prices shown include VAT.
+- **A product per kind of figurine**, each ₪160 with a quantity choice (0–10): "פסלון בודד של חיית מחמד" and "פסלון
+  בודד של ציור ילדים".
+- **Shipping** (Grow's "משלוח" field, required): "איסוף עצמי" at ₪0 and "משלוח" at ₪25, the site's self-pickup and
+  delivery to a pickup point.
+- **A coupon for 2 or more figurines** ("FIGURE10"). It must bring Grow's total to the site's: `prices.each` per
+  figurine (₪150), so ₪10 off each figurine.
+- **The names go in `site/config.js`** (step 8), exactly as Grow shows them, so the confirmation can say "choose
+  "פסלון בודד של חיית מחמד", quantity 2, and "פסלון בודד של ציור ילדים", quantity 1; in "משלוח" choose "משלוח"; enter
+  the coupon FIGURE10". Grow can't stop a wrong choice, so the site also shows the total to check, and you compare the
+  amount paid with the order's total in Life2Print. The prices shown include VAT.
 - **No open amount** (סכום פתוח off).
 - **A required custom field** (שדה מיוחד) labelled exactly **מספר הזמנה**. Make it a number field if Grow offers one:
   order numbers are 6 digits and never start with 0.
 - Keep Grow's payer fields: full name, phone and email. You'll match payments by them.
-- **A title and image** of your own: Grow's placeholder title ("כאן יש כותרת") and the template banner show to customers.
 - **Terms (תקנון):** link `https://www.figureit.co.il/terms.html`, with the required checkbox.
 - **Thank-you page (strongly recommended):** choose an external page and enter `https://www.figureit.co.il/?paid`.
   After paying, the customer lands on a thank-you note on the site that repeats their order number. It's also the only
@@ -155,18 +153,21 @@ export const CONFIG = {
   pickupFrom: 'גבעתיים',                                             // where self-pickup is
   prices: { one: 160, each: 150, pickupPoint: 25 },                  // see below
   growUrl: 'https://pay.grow.link/…',
-  growItems: { one: 'פסלון אחד', each: 'פסלון בהזמנה של 2 ומעלה', pickupPoint: 'משלוח לנקודת איסוף' },
+  growItems: { pet: 'פסלון בודד של חיית מחמד', drawing: 'פסלון בודד של ציור ילדים' },
+  growShipping: { pickup: 'איסוף עצמי', pickup_point: 'משלוח' },
+  growCoupon: 'FIGURE10',
 };
 ```
 
 - **Prices** are what the page shows and adds up: `one` for an order of one figurine, `each` per figurine in an order of
-  2 or more, `pickupPoint` for delivery. Grow's page sets what's charged, so keep them equal to its items. Write a plain
-  number without quotes (`160`, not `'160'`); `null` hides it, and the totals that need it.
+  2 or more, `pickupPoint` for delivery. Grow's page sets what's charged, so keep them equal to its products, shipping
+  and coupon. Write a plain number without quotes (`160`, not `'160'`); `null` hides it, and the totals that need it.
 - **`growUrl`** is the whole link as Grow shows it, starting with `https://`. **Without it**, the confirmation tells the
   customer you'll be in touch about payment instead of showing a pay button.
-- **`growItems`** are the names of the Grow page's three items, exactly as Grow shows them. With all three set, the
-  confirmation says which to choose and how many. Leave them `''` until the Grow page has its items: the confirmation then
-  gives only the total to pay.
+- **`growItems`**, **`growShipping`** and **`growCoupon`** are the Grow page's product per kind of figurine, its two
+  shipping options and the coupon for 2 or more, exactly as Grow shows them. The confirmation turns them into steps
+  (which products and how many, which shipping option, the coupon). A name left `''` leaves its step out; the total to
+  check and the order number are always there.
 - **A price or link in another form is ignored as if it weren't set**: a link pasted without `https://` gives no Pay
   button, and a price in quotes isn't shown. The browser console warns about it, and so does `npm run check` (step 9).
 - **Hebrew abbreviations break the file.** Every value sits inside `'…'`, so an ASCII apostrophe or double quote in
@@ -307,9 +308,9 @@ you deliberately want it reachable from your network, and only on a network you 
 
 Do this once before announcing the site, and again after changing the Grow pages.
 
-1. In Grow, set the "פסלון אחד" item's price to **₪1** for the test.
+1. In Grow, set the "פסלון בודד של חיית מחמד" product's price to **₪1** for the test.
 2. On the published site, on your phone, place an order of one pet figurine with 3 photos straight from the camera and
-   self-pickup, and pay with a real card on the Grow page, choosing the item the confirmation names and typing the order
+   self-pickup, and pay with a real card on the Grow page, choosing what the confirmation names and typing the order
    number into "מספר הזמנה".
 3. Write down **where the order number shows up in Grow**, and add what you find to `CLAUDE.md` (under Grow):
    - the transaction's details in the dashboard;
@@ -324,9 +325,10 @@ Do this once before announcing the site, and again after changing the Grow pages
 5. In Life2Print, the order shows up with its 3 photos, upright. Click **Payment received** with the transaction number.
 6. Refund the ₪1 from the transaction in Grow's dashboard, set the price back, and **Cancel** the test order in Life2Print.
 7. Place a second order (no need to pay; **Cancel** it afterwards) with **three figurines**, pets and drawings, and
-   **delivery to a pickup point**. Check that the total is 3 × 150 + 25, that the confirmation names "פסלון בהזמנה של 2
-   ומעלה" with quantity 3 and the delivery item with quantity 1, and that choosing those on the Grow page gives the same
-   total. In Life2Print the card shows the three figurines with the right photos under each, and the address.
+   **delivery to a pickup point**. Check that the total is 3 × 150 + 25 = ₪475, that the confirmation names both products
+   with their quantities, the shipping option "משלוח" and the coupon, and that doing exactly that on the Grow page (stop
+   before paying) gives the same total. In Life2Print the card shows the three figurines with the right photos under
+   each, and the address.
 
 Then test on real phones: an **iPhone** (Safari) and an **Android** phone (Chrome). On each, order with **3 full-size camera
 photos, at least one taken in portrait**, and check in Life2Print that each photo arrived upright and complete. Once,
@@ -440,11 +442,11 @@ If the site will send the new column, also add it to the `grant insert (…) on 
 
 - [ ] `rolbypassrls` is true, and the upload check returns false without an error (step 3)
 - [ ] Sign-ups and Realtime public access are off (step 4)
-- [ ] `site/config.js` has the URL, the publishable key, contact details, prices, the Grow link and the three Grow item
-      names, and `npm run check` passes with no warnings (step 9)
+- [ ] `site/config.js` has the URL, the publishable key, contact details, prices, the Grow link and the Grow page's
+      product, shipping and coupon names, and `npm run check` passes with no warnings (step 9)
 - [ ] `terms.html` is filled in and reviewed, and the Grow page links it
-- [ ] The Grow page: the three items at the config's prices with quantities, required "מספר הזמנה", its own title,
-      thank-you page `https://www.figureit.co.il/?paid`
+- [ ] The Grow page: a product per kind at the config's price, the two shipping options, the coupon giving the config's
+      price for 2 or more, required "מספר הזמנה", thank-you page `https://www.figureit.co.il/?paid`
 - [ ] www.figureit.co.il opens the site over https, and mail to contact@figureit.co.il still arrives (step 10)
 - [ ] The ₪1 test passed and was refunded, and you know where Grow shows the order number
 - [ ] A three-figurine order with delivery showed the right items and total, on the site and on Grow (step 12)

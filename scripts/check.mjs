@@ -7,7 +7,7 @@
 //    "orders will open soon" (index.html is closed until app.js opens it), and nobody can order. The usual cause is a
 //    Hebrew abbreviation typed with an ASCII apostrophe or quote inside a '…' string: 'רח' הרצל'.
 // 3. Warnings for config values that app.js would ignore as if unset: a Grow link without https://, a price in quotes,
-//    and Grow item names given for only some of the items.
+//    and Grow names given for only one of two kinds or shipping options.
 //
 // Only file names are printed for rule 1, like deploy.yml. No dependencies: it runs before `npm install`.
 
@@ -112,11 +112,25 @@ if (config && typeof config === 'object') {
     warn('growUrl must be the full link starting with https:// (https://pay.grow.link/…). '
       + 'Until it is, the confirmation shows no Grow button and says you\'ll be in touch about payment.');
   }
-  // The confirmation names the Grow items to choose only when it knows all of them.
-  const items = ['one', 'each', 'pickupPoint'].filter((key) => config.growItems?.[key]?.trim?.());
-  if (items.length && items.length < 3) {
-    warn('growItems names only some of the Grow page\'s items. The confirmation then says what to choose only for orders '
-      + 'that need just those, and gives the total alone for the rest.');
+  // The confirmation names the Grow products to choose only when it knows the product for every kind in the order.
+  const kinds = ['pet', 'drawing'].filter((key) => config.growItems?.[key]?.trim?.());
+  if (kinds.length === 1) {
+    warn('growItems names the Grow product for only one kind of figurine. The confirmation then says which products to '
+      + 'choose only for orders of that kind.');
+  }
+  const shipping = ['pickup', 'pickup_point'].filter((key) => config.growShipping?.[key]?.trim?.());
+  if (shipping.length === 1) warn('growShipping names only one of the Grow page\'s two shipping options.');
+  // The coupon is how Grow charges the lower price for 2 or more, so the two go together.
+  const { one = null, each = null } = config.prices ?? {};
+  const discounted = Number.isFinite(one) && Number.isFinite(each) && each < one;
+  const coupon = Boolean(config.growCoupon?.trim?.());
+  if (discounted && !coupon) {
+    warn('prices.each is lower than prices.one but growCoupon is empty: customers with 2 or more figurines aren\'t told how '
+      + 'to get that price on Grow, and Grow charges them more than the site shows.');
+  }
+  if (coupon && !discounted) {
+    warn('growCoupon is set but prices.each isn\'t lower than prices.one: the confirmation leaves the coupon step out, since '
+      + 'the total it shows has no discount.');
   }
 }
 

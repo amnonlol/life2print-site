@@ -62,15 +62,18 @@ The only dependency is `@electric-sql/pglite`, pinned to exactly 0.5.8 (a devDep
 1. **Config:** `site/config.js` (an ES module, committed). Orders are closed ("ההזמנות ייפתחו בקרוב", `console.warn` naming
    what's missing) until it has the URL (https, or http on localhost for a mock), the publishable key and a contact phone or
    email. `prices` (`one`: a single figurine; `each`: per figurine in an order of 2 or more; `pickupPoint`: delivery),
-   `growUrl` (one Grow page for every order), `growItems` (the Grow page's item names, so the confirmation can say what to
-   choose), `pickupFrom`, `deliveryDays`, `business`. No `growUrl`: the confirmation says we'll be in touch. A `growUrl`
+   `growUrl` (one Grow page for every order), `growItems` (its product per kind), `growShipping` (its "משלוח" field's two
+   options) and `growCoupon` (the discount code for 2+), so the confirmation can say what to choose, `pickupFrom`,
+   `deliveryDays`, `business`. No `growUrl`: the confirmation says we'll be in touch. A `growUrl`
    that isn't an absolute https link, or a price that isn't a plain number, counts as unset, with a `console.warn` (and a
    warning from `npm run check`).
    - **Prices:** total = `one` for one figurine, `each × n` for n ≥ 2 (or `one × n` if `each` is null), plus `pickupPoint`
      for delivery (`orderTotal`). The form shows it live under the fields (`#total`), and the row stores it as `price_ils`.
-   - **Grow steps** on the confirmation and the pending panel (`renderPayment`, `growChoice`): the items to choose and how
-     many (only when `growItems` names every item the order needs: `each` for 2+ figurines when it differs from `one`,
-     `pickupPoint` for delivery), the total to check, and the code to paste into "מספר הזמנה".
+   - **Grow steps** on the confirmation and the pending panel (`renderPayment`, `growSteps`): the product for each kind
+     with its quantity (only when `growItems` names every kind in the order; the stored order keeps `kinds` for this), the
+     shipping option, the coupon for 2 or more (only while `prices.each` is below `prices.one`: the coupon is what makes
+     Grow's total match the discounted one; `npm run check` warns when the two disagree), then always the total to check
+     and the code to paste into "מספר הזמנה".
    - **Closed is the default in index.html** (the notice visible, `#fields` disabled), and app.js opens the form. So a
      config.js or app.js that fails to load leaves the notice, not a form that looks open but can't be sent. The usual
      cause is a Hebrew abbreviation typed with an ASCII apostrophe inside `'…'` (`'רח' הרצל'`): config.js's header and
@@ -244,15 +247,19 @@ Why it's built this way:
 - **No prefill:** a Grow payment link can't carry the amount, the payer's details or a reference (none documented, and
   pay.grow.link's own JavaScript reads only the page hash). Prefill exists only through the server API (`createPaymentProcess`,
   `CreatePaymentLink`), which browsers can't call.
-- So there's **one fixed page** (עמוד קבוע) for every order, with an item per price: one figurine, a figurine in an order
-  of 2 or more, and delivery to a pickup point, each with a quantity, so Grow adds up the total. A required custom field
+- So there's **one fixed page** (עמוד קבוע) for every order, where Grow adds up the total: a required custom field
   **"מספר הזמנה"**, the terms page in its תקנון setting, and an external thank-you page `<site>/?paid` (optional in Grow,
   strongly recommended in SETUP: without it a customer who paid still sees the pending panel's Pay button). The site tells
-  the customer which items and quantities to choose (`growItems`) and the total to check. Grow can't stop a wrong choice,
-  so the operator compares the amount paid with the order's total in Life2Print.
-- **The owner's page as of 2026-10-22** (it will change): two products as checkboxes ("ציור לבובה" ₪150, "חיה לבובה" ₪120,
-  "ניתן לבחור עד 20"), payer fields (name, phone, email, invoice name, company/ID number, address), VAT shown as 0, no
-  "מספר הזמנה" field yet, and the title still Grow's placeholder "כאן יש כותרת". Seen by rendering it in headless Chrome.
+  the customer what to choose there and the total to check. Grow can't stop a wrong choice, so the operator compares the
+  amount paid with the order's total in Life2Print.
+- **The owner's page as of 2026-10-23,** read from the page's embedded JSON (`pageData`) in headless Chrome:
+  - products "פסלון בודד של חיית מחמד" and "פסלון בודד של ציור ילדים", ₪160 each, quantity 0–10;
+  - Grow's shipping field "משלוח" (required): "איסוף עצמי" ₪0, "משלוח" ₪25;
+  - its description says to use coupon **FIGURE10** for more than one figurine (Grow's coupon box sits behind "יש לי קוד
+    קופון!", which a script couldn't open, so the discount it gives is unconfirmed);
+  - fields: full name, mobile phone and email (required), address (optional), "מספר הזמנה" (required, text up to 50);
+  - VAT 18% included; title "יצירת פסלונים של ציורי ילדים וחיות מחמד"; the banner is the owner's TV appearance ("דאבל על
+    הכסף"), not a template leftover; `success_url` empty (no thank-you redirect), and no terms link seen.
 - **Matching:** Grow's dashboard searches name, email, phone, transaction number and card digits, not custom fields. Whether
   "מספר הזמנה" shows in the transaction details, the export or the receipt is **unverified**: SETUP.md step 12's ₪1 test should
   answer it; record the answer here. The payer may not be the customer, so the code is the surest match.
@@ -309,7 +316,8 @@ That sibling site (Vite + supabase-js, a ticket lead form before a Tranzila paym
 
 ## Open questions and next steps
 
-- **Grow page:** the owner's page needs the "מספר הזמנה" field and the three items (SETUP step 7), then `growItems` in config.js.
+- **Grow page:** the coupon FIGURE10's value is unconfirmed (a script couldn't open Grow's coupon box): it must make
+  2+ figurines cost `prices.each` (₪150) each. Its terms link and thank-you page (`success_url`) weren't set on 2026-10-23.
 - **Custom domain:** www.figureit.co.il isn't connected yet (SETUP step 10). The mailbox contact@figureit.co.il is on the
   same domain, so its MX records must survive the DNS change.
 - **₪1 test:** where does "מספר הזמנה" appear in Grow? Does the thank-you redirect land on the `?paid` note?
