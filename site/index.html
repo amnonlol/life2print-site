@@ -57,13 +57,40 @@
       <button type="button" id="thanks-new" class="button">הזמנה חדשה</button>
     </section>
 
+    <!-- Below the pending and thank-you panels: app.js doesn't scroll to those on load, so a customer back from Grow
+         would otherwise land on the examples. The arrow points left, from the photo (right in RTL) to the print. -->
+    <section class="card examples" aria-labelledby="examples-title">
+      <div class="section-head">
+        <h2 id="examples-title">דוגמאות</h2>
+        <!-- Skips the examples. Hidden by styles.css while the form is (the confirmation and thank-you replace it). -->
+        <a class="button brick green to-order" href="#order-form">להזמנה<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6"/></svg></a>
+      </div>
+      <p class="hint">הפסלונים מגיעים לבנים, כמו בתמונות, ואפשר לצבוע אותם בבית.</p>
+      <figure class="example pet">
+        <div class="example-pair">
+          <img src="examples/pet-photo.jpg" width="600" height="750" loading="lazy" alt="תמונה של כלב שחור עם חזה וכפות לבנים, שוכב על הרצפה">
+          <img src="examples/pet-figurine.jpg" width="600" height="750" loading="lazy" alt="הפסלון שהודפס ממנה: הכלב באותה תנוחת שכיבה, בפלסטיק לבן, על מסך של טלפון">
+          <svg class="example-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg>
+        </div>
+        <figcaption>פסלון של חיית מחמד</figcaption>
+      </figure>
+      <figure class="example drawing">
+        <div class="example-pair">
+          <img src="examples/drawing.jpg" width="600" height="500" loading="lazy" alt="ציור ילדים בטושים: דמות עם אוזניים אדומות מחודדות, חולצה כחולה וידיים פרושות">
+          <img src="examples/drawing-toy.jpg" width="600" height="500" loading="lazy" alt="הצעצוע שהודפס ממנו: אותה דמות בפלסטיק לבן, עם אוזניים מחודדות וידיים פרושות">
+          <svg class="example-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg>
+        </div>
+        <figcaption>צעצוע מציור של ילד/ה</figcaption>
+      </figure>
+    </section>
+
     <form id="order-form" class="card" novalidate>
       <h2 id="form-title" tabindex="-1">הזמנת פסלונים</h2>
       <noscript><p class="notice">כדי להזמין צריך דפדפן עם JavaScript פעיל.</p></noscript>
 
       <fieldset id="fields" class="plain" disabled>
         <p id="price-hint" class="price-hint" hidden></p>
-        <p class="hint">הפסלון מגיע לבן ולא צבוע, כך שאפשר לצבוע אותו בבית. הצבעים שבתמונה או בציור לא עוברים לפסלון.</p>
+        <p class="hint">הפסלון מגיע לבן ולא צבוע, עבור פעילות צביעה בבית. הצבעים שבתמונה או בציור לא עוברים לפסלון.</p>
 
         <!-- One item per figurine, made by app.js from the template below. -->
         <ol id="figurines" class="figurines"></ol>
@@ -97,10 +124,19 @@
               <p class="field-error" data-role="photos-error" hidden></p>
             </div>
 
-            <div class="field">
-              <label data-role="subject-label">שם החיה או הדמות <span class="optional">(לא חובה)</span></label>
-              <input type="text" maxlength="80" autocomplete="off" data-role="subject">
-              <p class="field-error" data-role="subject-error" hidden></p>
+            <!-- The character is asked only for a pet (app.js shows it), beside the name where there's room. -->
+            <div class="figurine-names">
+              <div class="field">
+                <label data-role="subject-label">שם החיה או הדמות <span class="optional">(לא חובה)</span></label>
+                <input type="text" maxlength="80" autocomplete="off" data-role="subject">
+                <p class="field-error" data-role="subject-error" hidden></p>
+              </div>
+              <div class="field" data-role="personality-field" hidden>
+                <label data-role="personality-label">אופי <span class="optional">(לא חובה)</span></label>
+                <input type="text" maxlength="200" autocomplete="off" data-role="personality">
+                <p class="hint" data-role="personality-hint">למשל: שובב, רגוע, סקרן</p>
+                <p class="field-error" data-role="personality-error" hidden></p>
+              </div>
             </div>
           </li>
         </template>
@@ -144,12 +180,23 @@
           <p id="delivery-error" class="field-error" hidden></p>
         </fieldset>
 
-        <div class="field" id="address-field" hidden>
-          <label for="address">הכתובת שלכם</label>
-          <textarea id="address" name="address" rows="2" maxlength="500" autocomplete="street-address" data-field="address" aria-describedby="address-hint address-error"></textarea>
-          <p id="address-hint" class="hint">רחוב, מספר ועיר. נשלח לנקודת האיסוף הקרובה לכתובת הזו ונודיע לכם לאן.</p>
-          <p id="address-error" class="field-error" hidden></p>
-        </div>
+        <!-- Two fields, so browsers can fill in a saved address; app.js joins them into the row's one address. -->
+        <fieldset class="plain field" id="address-field" aria-describedby="address-hint" hidden>
+          <legend>הכתובת שלכם</legend>
+          <div class="address-fields">
+            <div class="field street">
+              <label for="street">רחוב ומספר בית</label>
+              <input id="street" name="street" type="text" maxlength="200" autocomplete="address-line1" data-field="street" aria-describedby="street-error">
+              <p id="street-error" class="field-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="city">עיר או יישוב</label>
+              <input id="city" name="city" type="text" maxlength="100" autocomplete="address-level2" data-field="city" aria-describedby="city-error">
+              <p id="city-error" class="field-error" hidden></p>
+            </div>
+          </div>
+          <p id="address-hint" class="hint">נשלח לנקודת האיסוף הקרובה לכתובת הזו ונודיע לכם לאן.</p>
+        </fieldset>
 
         <div class="field">
           <label for="notes">הערות <span class="optional">(לא חובה)</span></label>

@@ -80,9 +80,13 @@ The only dependency is `@electric-sql/pglite`, pinned to exactly 0.5.8 (a devDep
      SETUP step 8 say to use ׳ and ״ or backticks, and `npm run check` and deploy.yml catch it.
 2. **Figurines:** `ol#figurines`, one `li.figurine` per figurine cloned from `template#figurine-template` (`addFigurine`).
    Each has a key (`fig1`, `fig2`, …, never reused) that names its ids, radio group and field keys (`fig2-kind`,
-   `fig2-photos`, `fig2-subject`), so errors and labels never mix; its number on the page (`פסלון 2`) follows removals
-   (`renumberFigurines`). Up to `MAX_FIGURINES` (10, as the database allows), 1–3 photos each. Removal is offered from two
-   figurines up; a figurine removed while its photos are being prepared is marked `removed`, and the pick is dropped.
+   `fig2-photos`, `fig2-subject`, `fig2-personality`), so errors and labels never mix; its number on the page (`פסלון 2`)
+   follows removals (`renumberFigurines`). Up to `MAX_FIGURINES` (10, as the database allows), 1–3 photos each. Removal is
+   offered from two figurines up; a figurine removed while its photos are being prepared is marked `removed`, and the pick
+   is dropped.
+   - **"אופי"** (the pet's character, optional, up to 200 characters; the owner's request, 2026-10-23) shows beside the
+     name only once the figurine is a pet (`updateKind`). Text typed before switching to a drawing stays in the hidden
+     field and isn't sent: a drawing's `personality` is always null.
    - **Function declarations, not arrow constants**, for anything init() reaches: init() runs at the top of the module,
      before a `const` further down is initialised (2026-10-22: `const deliveryValue = () => …` threw on load, and the page
      stayed closed).
@@ -91,9 +95,12 @@ The only dependency is `@electric-sql/pglite`, pinned to exactly 0.5.8 (a devDep
    A 192 px thumbnail is drawn from the same decode: showing the 2048 px JPEGs would keep up to 30 full decodes in memory.
    `accept="image/*"` exactly. The upload numbers them on through the order: figurine 1's photos first.
 4. **Delivery:** radios `delivery` = `pickup` (free, from `pickupFrom`, by arrangement) or `pickup_point` (+`prices.pickupPoint`);
-   the address field shows only for `pickup_point`, and the row has `address: null` for pickup.
+   the address shows only for `pickup_point`, and the row has `address: null` for pickup. Since 2026-10-23 it's two fields,
+   street and number (`autocomplete="address-line1"`) and city (`address-level2`), so browsers fill in a saved address;
+   the row still has one `address`, "<street>, <city>" (2–200 and 2–100 characters, within the database's 5–500).
+   A database refusal of the address is shown on the street.
 5. **Submit:** an attempt (`newAttempt`) is the row (`id: crypto.randomUUID()`, a 6-digit `code`, the fields: `items`
-   `[{ kind, subject_name, photos }]`, `delivery`, `address`, `photo_count`, `price_ils`, …), every figurine's photo Blobs
+   `[{ kind, subject_name, personality, photos }]`, `delivery`, `address`, `photo_count`, `price_ils`, …), every figurine's photo Blobs
    in order, and `inserted`, `unknown`, `assumed`, `uploaded`, `startedAt`, `rowAt`; made once and kept across retries.
    - Insert: `POST /rest/v1/orders`, `Prefer: return=minimal`, only the 12 granted columns, 20 s timeout. Outcomes:
      saved (201); unknown (network error, timeout, 5xx: retry with the same id and code); exists (23505 naming `orders_pkey`:
@@ -112,7 +119,10 @@ The only dependency is `@electric-sql/pglite`, pinned to exactly 0.5.8 (a devDep
      shop-wide hourly cap. So the page keeps the same row and code, shows an error with the contact details, and a retry
      uploads into the same order. The console names both likely causes.
 6. **Confirmation:** the summary (`3 פסלונים · משלוח לנקודת איסוף · סה״כ ₪475`), the code (copy button) and the Grow button:
-   a same-tab link that copies the code to the clipboard first, inside the click, with the Grow steps under it.
+   a link that opens Grow in a new tab (the owner's request, 2026-10-23; it was same-tab) and copies the code to the
+   clipboard inside the click, with the Grow steps under it. This tab stays on the confirmation, and a `storage` listener
+   runs `refreshRestoredPage` when another tab changes the stored order: Grow's `?paid` redirect, landing in Grow's tab,
+   turns this one into the thank-you note. The pending panel's Pay button opens a new tab too (`renderPayment` draws both).
    localStorage `figureit-order` keeps `{ code, paymentUrl, count, delivery, total, at, paidClaimed }` (every access in
    try/catch), so Back from Grow, a reload or an evicted tab shows the pending panel for 24 hours unless `paidClaimed`.
    - **The panel can't know whether they paid**, so it's neutral: "ההזמנה האחרונה שלכם: <code>", "אם עוד לא שילמתם, אפשר
@@ -140,7 +150,9 @@ Why it's built this way:
 ## The database (`supabase/schema.sql`)
 
 - **The row:** `items` jsonb lists 1–10 figurines `{ kind: 'pet' | 'drawing', subject_name: 1–80 trimmed characters or
-  null, photos: 1–3 }` (exactly those keys), checked by `orders_items_valid`, which calls `private.order_items_valid(items,
+  null, personality: for a pet 1–200 trimmed characters, else null, photos: 1–3 }` (exactly those keys, except that
+  `personality` may be missing: it came on 2026-10-23, the rows before lack it, and every update checks them again),
+  checked by `orders_items_valid`, which calls `private.order_items_valid(items,
   photo_count)`: a plpgsql function that never raises (anything malformed is false) and needs their photos to add up to
   `photo_count` (1–30). `delivery` is `pickup` or `pickup_point`; `orders_address_delivery` wants an address exactly for
   `pickup_point` (and leaves an unknown delivery to `orders_delivery_check`, so the refusal names the right column).
@@ -182,8 +194,9 @@ Why it's built this way:
 - **`npm test`** (`supabase/test.mjs`, plain node + `node:assert`): stubs Supabase's roles (`service_role` with BYPASSRLS) and a
   minimal `storage` schema (`buckets`, `objects` with `metadata` jsonb, `foldername`, `filename`, `allow_only_operation`), runs
   schema.sql twice, then replays PostgREST's insert (`insert … select … from json_to_recordset($1) returning 1`, as anon in a
-  transaction) and storage-api's plain insert. 41 tests, among them 30 bad values that must each name their constraint, 20
-  malformed `items` lists that must each be refused as `orders_items_valid`, the delivery/address rule, a 30-photo order, the
+  transaction) and storage-api's plain insert. 42 tests, among them 30 bad values that must each name their constraint, 25
+  malformed `items` lists that must each be refused as `orders_items_valid`, figurines without the `personality` key (as
+  the site sent before 2026-10-23), the delivery/address rule, a 30-photo order, the
   upgrade of a first-version table (run twice), the pkey-vs-code retry case, the 21st order in an hour (with the window
   pinned at 59 and 61 minutes), every refused upload path,
   the 800 MB cap at its boundary, RLS and the insert policy as a second layer behind the column grants (a mistaken column or
@@ -196,7 +209,8 @@ Why it's built this way:
   trigger, the code, email and phone patterns, the payment_ref index, EXECUTE on the guard, RLS off on orders, the insert
   policy's check loosened to `true` or missing its paid_at or job_ids clause, `set search_path = ''` dropped from one function
   or all three) made the matching test fail every time. The checks added on 2026-10-22 (items, delivery, the 30-photo
-  upload regex) haven't been mutation-tested. `SUPABASE_STUBS` in test.mjs must stay a plain template literal
+  upload regex) haven't been mutation-tested. The `personality` rule was, on 2026-10-23: allowing it on a drawing, empty,
+  201 characters, untrimmed or as a list, or refusing the key, each failed the suite. `SUPABASE_STUBS` in test.mjs must stay a plain template literal
   (no `${…}` or backslashes): the Life2Print end-to-end emulator reads it out of this file.
 - **`npm run check`** (`scripts/check.mjs`): deploy.yml's three key rules on every file `git add -A` would stage (tracked
   plus untracked-not-ignored, from `git ls-files`; `site/` alone without git), printing file names only and stopping there on
@@ -288,6 +302,12 @@ That sibling site (Vite + supabase-js, a ticket lead form before a Tranzila paym
 - **Brand:** "Figure It", two words (the owner's choice, 2026-10-22): in Fredoka a capital I is a plain bar, so "FigureIt"
   read as "Figurelt". The domain and mailbox stay figureit.co.il.
 - **Prices include VAT**, as Israeli customers expect; the owner doesn't want it spelled out beyond the terms' one line.
+- **Examples** (`site/examples/`, 2026-10-23): one pet and one drawing, each the source photo and the white print, cropped
+  from Life2Print's private `Examples/` (`Pets/Examples/Robin2*`, `Drawings/Examples/AchbarBenad*`) with ffmpeg at 600 px
+  wide, JPEG, `-map_metadata -1` so no EXIF or GPS goes public. Generic file names, since source names can carry people's
+  names. The section sits below the pending and thank-you panels, which app.js shows on load without scrolling to them.
+  Its "להזמנה" link (`.to-order`) jumps to `#order-form` (smooth unless reduced motion), and styles.css hides it while
+  the form is hidden.
 - **Language:** the UI is Hebrew and right-to-left (`<html lang="he" dir="rtl">`, logical CSS properties, `<bdi>` around codes,
   `dir="ltr"` on phone and email inputs); code comments and docs are English.
 - **Code:** plain ES modules, no frameworks or build step; app.js stays one readable module. Comments explain why.

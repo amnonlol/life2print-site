@@ -42,6 +42,10 @@
 [hidden] { display: none !important; }
 
 html { -webkit-text-size-adjust: 100%; }
+/* The skip-to-order link glides there, unless the visitor asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 
 body {
   margin: 0;
@@ -177,6 +181,66 @@ main {
 .notice { margin: 0; border-inline-start: 6px solid var(--brick-yellow); }
 noscript .notice { padding: 10px 14px; border-radius: 10px; background: var(--paper); }
 
+/* ---------- Examples ---------- */
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-block-end: 8px;
+}
+.section-head h2 { margin: 0; }
+.to-order { gap: 6px; }
+.to-order svg {
+  inline-size: 20px;
+  block-size: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Nothing to skip to once the confirmation or the thank-you has replaced the form. */
+main:has(#order-form[hidden]) .to-order { display: none; }
+#order-form { scroll-margin-block-start: 16px; }
+
+.example { margin: 20px 0 0; }
+.example.pet { --brick: var(--brick-red); } /* the same colours as the kinds on the form */
+.example.drawing { --brick: var(--brick-blue); }
+/* The photo and the print side by side, with the arrow on the seam between them. */
+.example-pair {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.example img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  background: var(--paper);
+  border-radius: 10px;
+}
+.example-arrow {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: 40px;
+  block-size: 40px;
+  padding: 7px;
+  fill: none;
+  stroke: var(--on-brick);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  background: var(--brick);
+  border: 3px solid var(--card);
+  border-radius: 50%;
+}
+.example figcaption { margin-block-start: 8px; font-weight: 600; }
+
 /* ---------- Form ---------- */
 
 /* min-inline-size: 0 because a fieldset is min-content wide by default, which can push the page sideways. */
@@ -257,6 +321,14 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], .choice:has([aria-inv
 .figurine-title { margin: 0; font-size: 1.2rem; }
 .figurine-title:focus { outline: none; }
 .add-figurine { margin-block-start: 16px; }
+
+/* A figurine's name and a pet's character, and the street and city: side by side where there's room. A hidden
+   field takes no space, so the name then spans the row. */
+@media (min-width: 560px) {
+  .figurine-names, .address-fields { display: flex; gap: 16px; }
+  .figurine-names > .field, .address-fields > .field { flex: 1 1 0; min-inline-size: 0; }
+  .address-fields > .street { flex-grow: 2; }
+}
 .add-figurine .hint { margin-block-start: 8px; }
 
 /* A text-styled button with a 44 px tap target. */

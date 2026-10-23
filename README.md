@@ -22,6 +22,7 @@ site/                 the published site (no build step)
   app.js              the form, photo preparation, saving the order, and the hand-off to Grow
   config.js           public settings: Supabase URL and publishable key, contact details, prices, the Grow page
   favicon.svg
+  examples/           before-and-after photos for the examples section
 supabase/schema.sql   the orders table, the photo bucket and their access rules (run in Supabase's SQL editor)
 supabase/test.mjs     tests of schema.sql in PGlite, with no Supabase project
 scripts/serve.mjs     local preview server

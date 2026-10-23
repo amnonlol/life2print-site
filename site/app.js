@@ -33,30 +33,34 @@ const STORAGE_KEY = 'figureit-order';
 const PAID_RETURN = /[?&]paid(?=$|[=&?])/;
 
 // The same rules as the checks in supabase/schema.sql, so the database never refuses what the form accepted.
-// Lengths count characters the way Postgres does (code points), after trimming.
-const LIMITS = { subject: 80, name: [2, 120], email: 200, address: [5, 500], notes: 2000 };
+// Lengths count characters the way Postgres does (code points), after trimming. The street and city are sent as one
+// address, "<street>, <city>", which their limits keep within the database's 5–500.
+const LIMITS = { subject: 80, personality: 200, name: [2, 120], email: 200, street: [2, 200], city: [2, 100], notes: 2000 };
 const PHONE_RE = /^0[0-9]{8,9}$/;
 const EMAIL_RE = /^[^@\s?#&%/,;<>"]+@[^@\s?#&%/,;<>"]+[.][^@\s?#&%/,;<>"]+$/;
 // Check constraints are named after their column (orders_phone_format, ...), so a refusal can point at its field.
 // A refusal of items or photo_count can't say which figurine, so it gets the general message.
 const CONSTRAINT_FIELDS = [
-  ['customer_name', 'name'], ['phone', 'phone'], ['email', 'email'], ['address', 'address'], ['delivery', 'delivery'],
+  ['customer_name', 'name'], ['phone', 'phone'], ['email', 'email'], ['address', 'street'], ['delivery', 'delivery'],
   ['notes', 'notes'],
 ];
-// The fields after the figurines, in page order. Each figurine adds `<key>-kind`, `<key>-photos` and `<key>-subject`.
-const ORDER_KEYS = ['name', 'phone', 'email', 'delivery', 'address', 'notes', 'consent'];
+// The fields after the figurines, in page order. Each figurine adds `<key>-kind`, `<key>-photos`, `<key>-subject`
+// and `<key>-personality`.
+const ORDER_KEYS = ['name', 'phone', 'email', 'delivery', 'street', 'city', 'notes', 'consent'];
 
 const MESSAGES = {
   kind: 'נא לבחור מה מדפיסים.',
   photos: 'נא לצרף לפחות תמונה אחת.',
   subject: `אפשר עד ${LIMITS.subject} תווים.`,
+  personality: `אפשר עד ${LIMITS.personality} תווים.`,
   name: 'נא לכתוב שם מלא.',
   phoneMissing: 'נא לכתוב מספר טלפון.',
   phone: 'מספר הטלפון לא נראה תקין. למשל: 050-1234567',
   emailMissing: 'נא לכתוב כתובת אימייל.',
   email: 'כתובת האימייל לא נראית תקינה.',
   delivery: 'נא לבחור איך לקבל את ההזמנה.',
-  address: 'נא לכתוב כתובת מלאה: רחוב, מספר ועיר.',
+  street: 'נא לכתוב רחוב ומספר בית.',
+  city: 'נא לכתוב עיר או יישוב.',
   notes: `אפשר עד ${LIMITS.notes} תווים.`,
   consent: 'כדי להזמין צריך לאשר את תנאי ההזמנה.',
 };
@@ -93,7 +97,7 @@ const el = {
   figurinesHint: $('figurines-hint'),
   name: $('customer-name'), phone: $('phone'), email: $('email'),
   pickupFrom: $('pickup-from'), pickupPointPrice: $('pickup-point-price'), addressField: $('address-field'),
-  address: $('address'), notes: $('notes'), consent: $('consent'),
+  street: $('street'), city: $('city'), notes: $('notes'), consent: $('consent'),
   alert: $('form-alert'), total: $('total'), submit: $('submit'), status: $('status'), help: $('status-help'),
   confirmation: $('confirmation'), confirmTitle: $('confirm-title'), confirmSummary: $('confirm-summary'),
   confirmCode: $('confirm-code'), copyCode: $('copy-code'),
@@ -129,7 +133,7 @@ function init() {
   el.form.addEventListener('change', (event) => {
     if (event.target.name === 'delivery') updateDelivery();
     const figurine = figurineOf(event.target);
-    if (figurine && event.target.type === 'radio') updatePhotoTip(figurine);
+    if (figurine && event.target.type === 'radio') updateKind(figurine);
   });
   el.addFigurine.addEventListener('click', () => addFigurine().el.title.focus());
   el.pendingDismiss.addEventListener('click', () => {
@@ -147,6 +151,11 @@ function init() {
   // would be offered for payment again.
   window.addEventListener('pageshow', (event) => {
     if (event.persisted) refreshRestoredPage();
+  });
+  // The Pay button opens Grow in a new tab, and Grow's thank-you redirect (`?paid`) lands there and marks the order
+  // paid-claimed. This tab, still on the confirmation, follows (`storage` fires only in the other tabs).
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY) refreshRestoredPage();
   });
 
   addFigurine();
@@ -352,6 +361,7 @@ function addFigurine() {
     el: {
       root, title: part('title'), remove: part('remove'), kinds: part('kinds'), tip: part('tip'), thumbs: part('thumbs'),
       input: part('input'), button: part('button'), status: part('status'), subject: part('subject'),
+      personalityField: part('personality-field'), personality: part('personality'),
     },
   };
   // Every id, name and field key is the figurine's own, so labels, errors and radio groups never mix between figurines.
@@ -376,6 +386,12 @@ function addFigurine() {
   figurine.el.subject.setAttribute('aria-describedby', `${key}-subject-error`);
   part('subject-label').htmlFor = figurine.el.subject.id;
   part('subject-error').id = `${key}-subject-error`;
+  figurine.el.personality.id = `${key}-personality`;
+  figurine.el.personality.dataset.field = `${key}-personality`;
+  figurine.el.personality.setAttribute('aria-describedby', `${key}-personality-hint ${key}-personality-error`);
+  part('personality-label').htmlFor = figurine.el.personality.id;
+  part('personality-hint').id = `${key}-personality-hint`;
+  part('personality-error').id = `${key}-personality-error`;
 
   figurine.el.input.addEventListener('change', () => {
     const files = [...figurine.el.input.files];
@@ -430,10 +446,14 @@ function figurineKind(figurine) {
   return figurine.el.kinds.querySelector('input:checked')?.value ?? '';
 }
 
-function updatePhotoTip(figurine) {
-  const tip = PHOTO_TIPS[figurineKind(figurine)] ?? '';
+/** The photo tip for the chosen kind, and the character field, which only a pet has. */
+function updateKind(figurine) {
+  const kind = figurineKind(figurine);
+  const tip = PHOTO_TIPS[kind] ?? '';
   figurine.el.tip.textContent = tip;
   figurine.el.tip.hidden = !tip;
+  figurine.el.personalityField.hidden = kind !== 'pet';
+  if (kind !== 'pet') clearFieldError(`${figurine.key}-personality`); // not sent, so nothing to fix
 }
 
 // ---------- Photos ----------
@@ -566,7 +586,10 @@ function deliveryValue() {
 /** The address is asked for only when the order is sent to a pickup point. */
 function updateDelivery() {
   el.addressField.hidden = deliveryValue() !== 'pickup_point';
-  if (el.addressField.hidden) setFieldError('address', null);
+  if (el.addressField.hidden) {
+    setFieldError('street', null);
+    setFieldError('city', null);
+  }
   updateTotal();
 }
 
@@ -574,29 +597,35 @@ function updateDelivery() {
 
 /** Every field that can show an error, in page order. */
 function fieldKeys() {
-  return [...state.figurines.flatMap(({ key }) => [`${key}-kind`, `${key}-photos`, `${key}-subject`]), ...ORDER_KEYS];
+  const figurineKeys = ({ key }) => [`${key}-kind`, `${key}-photos`, `${key}-subject`, `${key}-personality`];
+  return [...state.figurines.flatMap(figurineKeys), ...ORDER_KEYS];
 }
 
 /** Checks the form like the database will. Returns the row's fields, or null after showing what to fix. */
 function validateForm() {
   updateDelivery(); // in step with the radios, even if the browser restored them without a change event
   const chars = (text) => [...text].length;
-  const figurines = state.figurines.map((figurine) => ({
-    figurine, kind: figurineKind(figurine), subject: figurine.el.subject.value.trim(),
-  }));
+  const figurines = state.figurines.map((figurine) => {
+    const kind = figurineKind(figurine);
+    // Only a pet has a character: a drawing's (typed before switching kinds) stays on the hidden field, unsent.
+    const personality = kind === 'pet' ? figurine.el.personality.value.trim() : '';
+    return { figurine, kind, subject: figurine.el.subject.value.trim(), personality };
+  });
   const values = {
     name: el.name.value.trim(),
     phone: normalisePhone(el.phone.value),
     email: el.email.value.trim(),
     delivery: deliveryValue(),
-    address: el.address.value.trim(),
+    street: el.street.value.trim(),
+    city: el.city.value.trim(),
     notes: el.notes.value.trim(),
   };
   const errors = {};
-  for (const { figurine: { key, photos }, kind, subject } of figurines) {
+  for (const { figurine: { key, photos }, kind, subject, personality } of figurines) {
     if (kind !== 'pet' && kind !== 'drawing') errors[`${key}-kind`] = MESSAGES.kind;
     if (!photos.length) errors[`${key}-photos`] = MESSAGES.photos;
     if (chars(subject) > LIMITS.subject) errors[`${key}-subject`] = MESSAGES.subject;
+    if (chars(personality) > LIMITS.personality) errors[`${key}-personality`] = MESSAGES.personality;
   }
   if (chars(values.name) < LIMITS.name[0] || chars(values.name) > LIMITS.name[1]) errors.name = MESSAGES.name;
   if (!values.phone) errors.phone = MESSAGES.phoneMissing;
@@ -605,8 +634,10 @@ function validateForm() {
   else if (chars(values.email) > LIMITS.email || !EMAIL_RE.test(values.email)) errors.email = MESSAGES.email;
   if (values.delivery !== 'pickup' && values.delivery !== 'pickup_point') errors.delivery = MESSAGES.delivery;
   const shipped = values.delivery === 'pickup_point';
-  if (shipped && (chars(values.address) < LIMITS.address[0] || chars(values.address) > LIMITS.address[1])) {
-    errors.address = MESSAGES.address;
+  for (const part of ['street', 'city']) {
+    if (shipped && (chars(values[part]) < LIMITS[part][0] || chars(values[part]) > LIMITS[part][1])) {
+      errors[part] = MESSAGES[part];
+    }
   }
   if (chars(values.notes) > LIMITS.notes) errors.notes = MESSAGES.notes;
   if (!el.consent.checked) errors.consent = MESSAGES.consent;
@@ -622,12 +653,14 @@ function validateForm() {
     return null;
   }
   return {
-    items: figurines.map(({ figurine, kind, subject }) => ({ kind, subject_name: subject || null, photos: figurine.photos.length })),
+    items: figurines.map(({ figurine, kind, subject, personality }) => ({
+      kind, subject_name: subject || null, personality: personality || null, photos: figurine.photos.length,
+    })),
     customer_name: values.name,
     phone: values.phone,
     email: values.email,
     delivery: values.delivery,
-    address: shipped ? values.address : null,
+    address: shipped ? `${values.street}, ${values.city}` : null,
     notes: values.notes || null,
     photo_count: figurines.reduce((sum, { figurine }) => sum + figurine.photos.length, 0),
     price_ils: orderTotal(figurines.length, values.delivery),
@@ -969,8 +1002,11 @@ function renderPayment(container, order, { quiet = false } = {}) {
     container.replaceChildren(note);
     return;
   }
-  const pay = make('a', { className: quiet ? 'button' : 'button brick green', href: paymentUrl, textContent: 'לתשלום ב-Grow' });
-  pay.addEventListener('click', (event) => goToPayment(event, order.code));
+  const pay = make('a', {
+    className: quiet ? 'button' : 'button brick green', href: paymentUrl, target: '_blank', rel: 'noopener',
+    textContent: 'לתשלום ב-Grow',
+  });
+  pay.addEventListener('click', () => copyForPayment(order.code));
   const steps = make('ul', { className: 'pay-steps' });
   const step = (...content) => {
     const item = make('li');
@@ -1014,15 +1050,11 @@ function growSteps({ count, kinds, delivery }) {
   return steps;
 }
 
-// Grow's page asks for the order code and opens in this tab, so the code goes to the clipboard on the way.
+// Grow's page asks for the order code, so the code goes to the clipboard on the way. Grow opens in a new tab, so
+// this page, with the code and the steps, stays open beside it and the write isn't cut short by leaving.
 // The copy must start inside the click: browsers only allow clipboard writes during a user gesture.
-function goToPayment(event, code) {
-  const copied = navigator.clipboard?.writeText(code).catch(() => {});
-  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; // opening it elsewhere
-  event.preventDefault();
-  const { href } = event.currentTarget;
-  // Leaving at once can drop a write that's still pending, so give it a moment.
-  Promise.race([copied, new Promise((resolve) => setTimeout(resolve, 500))]).then(() => location.assign(href));
+function copyForPayment(code) {
+  navigator.clipboard?.writeText(code).catch(() => {});
 }
 
 async function copyCode() {
@@ -1078,8 +1110,9 @@ function bySms() {
 }
 
 /**
- * A page restored from the back/forward cache shows what a fresh load would: the thank-you for an order marked
- * paid since (by the `?paid` page or the panel's button), else the form with the pending panel. A confirmation
+ * A page restored from the back/forward cache, or whose stored order another tab has changed, shows what a fresh
+ * load would: the thank-you for an order marked paid since (by the `?paid` page or the panel's button), else the
+ * form with the pending panel. A confirmation
  * left as it was would still say "next: payment" to someone coming back from Grow's own success page.
  */
 function refreshRestoredPage() {

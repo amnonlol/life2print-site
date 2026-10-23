@@ -36,7 +36,8 @@ create table if not exists public.orders (
   code          text not null,                         -- 6 digits the customer types into Grow's "מספר הזמנה" field
   created_at    timestamptz not null default now(),
   -- The figurines, 1–10: [{"kind": "pet" | "drawing", "subject_name": the pet's or character's name or null,
-  -- "photos": 1–3}, …]. Their photos are numbered on through the order: with [{…, "photos": 2}, {…, "photos": 1}],
+  -- "personality": a pet's character ("אופי") or null, "photos": 1–3}, …]; rows from before 2026-10-23 have no
+  -- "personality". Their photos are numbered on through the order: with [{…, "photos": 2}, {…, "photos": 1}],
   -- 1.jpg and 2.jpg are the first figurine's and 3.jpg the second's. Checked by orders_items_valid (below).
   items         jsonb not null,
   customer_name text not null,
@@ -82,7 +83,9 @@ create table if not exists public.orders (
 
 -- Whether `items` lists the figurines of an order with `photo_count` photos: 1–10 objects, each with exactly the keys
 -- kind ('pet' or 'drawing'), subject_name (null, or 1–80 characters with no space at either end) and photos (1, 2
--- or 3), whose photos add up to photo_count. Anything malformed is false rather than an error, so a bad row is
+-- or 3), and optionally personality (null, or for a pet 1–200 characters with no space at either end), whose photos
+-- add up to photo_count. personality is optional because it came later (2026-10-23): the rows from before don't
+-- have it, and this check runs again on them. Anything malformed is false rather than an error, so a bad row is
 -- refused as a check violation naming orders_items_valid, which the site recognises.
 --
 -- A check constraint runs its function as whoever writes the row, so anon (inserting) and service_role (updating:
@@ -102,7 +105,7 @@ begin
   end if;
   for item in select value from jsonb_array_elements(items) loop
     if jsonb_typeof(item) is distinct from 'object'
-       or item - 'kind' - 'subject_name' - 'photos' <> '{}'::jsonb
+       or item - 'kind' - 'subject_name' - 'photos' - 'personality' <> '{}'::jsonb
        or not (item ? 'subject_name')
        or coalesce(item ->> 'kind', '') not in ('pet', 'drawing')
        or jsonb_typeof(item -> 'photos') is distinct from 'number'
@@ -115,6 +118,16 @@ begin
         return false;
       end if;
     elsif jsonb_typeof(item -> 'subject_name') <> 'null' then
+      return false;
+    end if;
+    -- Without the key, jsonb_typeof gives null and neither branch applies.
+    if jsonb_typeof(item -> 'personality') = 'string' then
+      if item ->> 'kind' <> 'pet'
+         or char_length(item ->> 'personality') not between 1 and 200
+         or item ->> 'personality' <> btrim(item ->> 'personality') then
+        return false;
+      end if;
+    elsif jsonb_typeof(item -> 'personality') <> 'null' then
       return false;
     end if;
     total := total + (item ->> 'photos')::int;

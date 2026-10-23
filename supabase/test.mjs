@@ -140,7 +140,7 @@ let lastCode = 100000;
 const nextCode = () => String(++lastCode);
 
 // One figurine of an order, as the site sends it.
-const figurine = (fields = {}) => ({ kind: 'pet', subject_name: 'רובין', photos: 1, ...fields });
+const figurine = (fields = {}) => ({ kind: 'pet', subject_name: 'רובין', personality: null, photos: 1, ...fields });
 
 // An order as the site sends it: only the columns anon may insert, values trimmed and normalised.
 function newOrder(fields = {}) {
@@ -295,7 +295,7 @@ await test('a valid order is saved, with status and the operator fields at their
 await test('values at the limits are accepted', async () => {
   await restInsert(newOrder({
     items: Array.from({ length: 10 }, (_, i) => figurine({
-      kind: i % 2 ? 'drawing' : 'pet', subject_name: 'ש'.repeat(80), photos: 3,
+      kind: i % 2 ? 'drawing' : 'pet', subject_name: 'ש'.repeat(80), personality: i % 2 ? null : 'א'.repeat(200), photos: 3,
     })),
     customer_name: 'דן',
     phone: '031234567',
@@ -307,13 +307,19 @@ await test('values at the limits are accepted', async () => {
     user_agent: 'u'.repeat(500),
   }));
   await restInsert(newOrder({
-    items: [figurine({ subject_name: null }), figurine({ kind: 'drawing', subject_name: 'ד', photos: 2 })],
+    items: [figurine({ subject_name: null, personality: 'ש' }), figurine({ kind: 'drawing', subject_name: 'ד', photos: 2 })],
     photo_count: 3,
     customer_name: 'כ'.repeat(120),
     address: 'רחוב1',
     price_ils: 99999.99,
   }));
 });
+
+// The site before 2026-10-23 sent no personality, and the rows it saved get the check again on every update.
+await test('a figurine without the personality key is accepted', () => restInsert(newOrder({
+  items: [{ kind: 'pet', subject_name: null, photos: 1 }, { kind: 'drawing', subject_name: 'ד', photos: 2 }],
+  photo_count: 3,
+})));
 
 await test('self-pickup takes no address', () => restInsert(newOrder({ delivery: 'pickup', address: null, price_ils: 160 })));
 
@@ -436,6 +442,11 @@ const BAD_ITEMS = [
   ['an untrimmed name', [figurine({ subject_name: ' רובין' })]],
   ['an 81-character name', [figurine({ subject_name: 'x'.repeat(81) })]],
   ['a name that is a number', [figurine({ subject_name: 5 })]],
+  ['an empty personality', [figurine({ personality: '' })]],
+  ['an untrimmed personality', [figurine({ personality: 'שובב ' })]],
+  ['a 201-character personality', [figurine({ personality: 'x'.repeat(201) })]],
+  ['a personality that is a list', [figurine({ personality: ['שובב'] })]],
+  ['a personality for a drawing', [figurine({ kind: 'drawing', personality: 'שובב' })]],
   ['more photos than photo_count', [figurine(), figurine()]],
   ['fewer photos than photo_count', [figurine({ photos: 2 })], { photo_count: 3 }],
 ];
