@@ -131,8 +131,12 @@ a { color: var(--link); text-underline-offset: 2px; }
 
 .tagline { margin: 6px 0 0; color: var(--muted); font-size: 1.05rem; }
 
+/* minmax(0, 1fr), not the implicit auto column: an auto column grows to its widest card's min-content, and the
+   examples carousel's row of tiles (each at least as wide as its caption's longest word) made the page 619 px wide
+   on a 390 px phone, which then opened zoomed in on part of it. */
 main {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   padding-block: 20px 32px;
 }

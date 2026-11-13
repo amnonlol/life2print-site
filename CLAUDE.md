@@ -328,6 +328,11 @@ That sibling site (Vite + supabase-js, a ticket lead form before a Tranzila paym
 - **DOM:** `textContent` and `createElement` for anything built from user input or config; never `innerHTML` with them.
 - **CSS:** tokens on `:root` with a dark theme under `prefers-color-scheme`, an explicit body background, tap targets of at least
   44 px, visible focus rings, `prefers-reduced-motion`.
+  - **Nothing may widen the page on a phone.** `main` is a grid with one `minmax(0, 1fr)` column: until 2026-11-13 it was
+    the implicit auto column, which grew to the carousel's min-content (11 tiles, each as wide as its caption's longest
+    word), so the page was 619 px wide at 390 px and phones opened it zoomed in. Check a layout change at 320 and 390 px
+    (`document.documentElement.scrollWidth` must equal `clientWidth`, with CDP's `Emulation.setDeviceMetricsOverride`
+    and `mobile: true`).
 - **Forms:** `novalidate` with our own Hebrew messages; client checks mirror schema.sql exactly (same patterns, trimmed before
   measuring and sending, phone normalised first: digits only, a leading 972 becomes 0).
 
