@@ -208,40 +208,62 @@ noscript .notice { padding: 10px 14px; border-radius: 10px; background: var(--pa
 main:has(#order-form[hidden]) .to-order { display: none; }
 #order-form { scroll-margin-block-start: 16px; }
 
-.example { margin: 20px 0 0; }
-.example.pet { --brick: var(--brick-red); } /* the same colours as the kinds on the form */
-.example.drawing { --brick: var(--brick-blue); }
-/* The photo and the print side by side, with the arrow on the seam between them. */
-.example-pair {
-  position: relative;
+/* A scroll-snap row of square tiles, `--per-view` at a time; app.js scrolls it (Carousel there). The images are
+   square already, so object-fit only matters while one is loading. */
+.carousel { margin-block-start: 16px; }
+.carousel-track {
+  --per-view: 2;
+  --gap: 8px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - (var(--per-view) - 1) * var(--gap)) / var(--per-view));
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
 }
-.example img {
+@media (min-width: 560px) {
+  .carousel-track { --per-view: 3; --gap: 12px; }
+}
+.carousel-track > li { scroll-snap-align: start; }
+.carousel figure { margin: 0; }
+.carousel img {
   display: block;
   inline-size: 100%;
   block-size: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
   background: var(--paper);
   border-radius: 10px;
 }
-.example-arrow {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  inline-size: 40px;
-  block-size: 40px;
-  padding: 7px;
+.carousel figcaption { margin-block-start: 6px; font-size: 0.9rem; font-weight: 600; line-height: 1.35; }
+
+/* The buttons need app.js, so they show only once it has set the carousel up; the row's scrollbar goes then. */
+.carousel-controls { display: none; }
+.carousel.ready .carousel-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-block-start: 12px;
+}
+.carousel.ready .carousel-track { scrollbar-width: none; }
+.carousel.ready .carousel-track::-webkit-scrollbar { display: none; }
+.button.carousel-button { inline-size: 48px; padding: 0; border-radius: 50%; } /* .button comes later in this file */
+.carousel-button svg {
+  inline-size: 20px;
+  block-size: 20px;
   fill: none;
-  stroke: var(--on-brick);
+  stroke: currentColor;
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
-  background: var(--brick);
-  border: 3px solid var(--card);
-  border-radius: 50%;
 }
-.example figcaption { margin-block-start: 8px; font-weight: 600; }
+.carousel-button .play { fill: currentColor; }
+.carousel .play, .carousel.stopped .pause { display: none; }
+.carousel.stopped .play { display: block; }
 
 /* ---------- Form ---------- */
 
@@ -518,13 +540,6 @@ input[aria-invalid="true"], textarea[aria-invalid="true"], .choice:has([aria-inv
 .legal p, .legal li { line-height: 1.7; }
 .legal ul { margin: 8px 0; padding-inline-start: 22px; }
 .legal .warning { font-weight: 600; }
-/* Notes for whoever completes the template; they must be gone before it's published. */
-.todo {
-  padding: 0 4px;
-  color: var(--muted);
-  border: 1px dashed var(--field-border);
-  border-radius: 4px;
-}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

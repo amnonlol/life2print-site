@@ -180,8 +180,7 @@ Then open `site/terms.html`. It is a template, not legal advice. The comment at 
 1. fill every `[placeholder]` in square brackets (the business details, phone, email and delivery time come from
    `config.js` once they're set there);
 2. check every statement against how you actually work (prices, VAT, shipping, how long you keep data);
-3. remove the dashed notes marked "לבדיקה";
-4. **have a lawyer review the page** before taking real orders: cancelling custom-made goods, product safety for a
+3. **have a lawyer review the page** before taking real orders: cancelling custom-made goods, product safety for a
    child's toy, and the privacy notice.
 
 ## 9. Check it, and try it locally
@@ -363,11 +362,15 @@ running out of memory (keep the page open: they upload one at a time). Also try:
   automatically. Photos are deleted from **Storage → order-photos** by Life2Print, at the next sync after an order is
   **Done** or **Cancelled**, and 14 days after an order that was never paid. Before that it downloads any photo it
   doesn't have yet, so its own copies in `data\orders\<id>\` are complete; those stay until you delete them by hand.
-  The order's card then says "Photos removed from Supabase". To delete old orders, as your terms promise:
+  The order's card then says "Photos removed from Supabase". The terms promise to delete an order's details and
+  Life2Print's copies of its photos within **6 months**, so delete old orders by hand, often enough to keep that promise:
   1. In Life2Print, **Cancel** (or **Mark done**) each order you're about to delete, and wait until its card says
      "Photos removed from Supabase" (the next sync; **Refresh** syncs at once).
   2. Then delete the rows in the **Table Editor**. At its next full sync (hourly, at startup or on **Refresh**)
      Life2Print marks those orders "Deleted in Supabase".
+  3. Stop Life2Print and delete each order's folder `data\orders\<id>\`, and the folders in `data\jobs\` of the jobs
+     made for it (listed on its card; each keeps the customer's photo as `input.*`). Life2Print reads both folders
+     only at startup, so a running one would keep showing them.
 
   If a row goes first, Life2Print still deletes its photos at that full sync, once a direct lookup confirms the row is
   gone. But it can't for an order it never saw: a row deleted while Life2Print wasn't running, before it synced that

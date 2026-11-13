@@ -79,6 +79,8 @@ const RESENDING = 'שולחים את ההזמנה מחדש…';
 // A refused upload starts a fresh order only once the row may be past the bucket's 1-hour upload window
 // (schema.sql); the margin covers the difference between this device's clock and the database's.
 const UPLOAD_WINDOW_MINUTES = 55;
+const CAROUSEL_MS = 4000; // each tile of the examples carousel
+const CAROUSEL_MAX_PER_VIEW = 3; // styles.css: two tiles a view on a phone, three from 560 px
 // minimumFractionDigits too: older Safari throws when only the maximum is below the currency's default 2.
 const shekels = new Intl.NumberFormat('he-IL', {
   style: 'currency', currency: 'ILS', minimumFractionDigits: 0, maximumFractionDigits: 0,
@@ -169,6 +171,7 @@ function init() {
   el.fields.disabled = !site.open;
   updateDelivery();
   updateSubmit();
+  startCarousel(); // last, so nothing here can keep the form from opening
 }
 
 // ---------- Config ----------
@@ -1158,4 +1161,88 @@ function loadOrder() {
 
 function storeOrder(order) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(order)); } catch { /* see above */ }
+}
+
+// ---------- Examples carousel ----------
+
+// index.html's examples are a scroll-snap row of equal tiles, so a phone swipes it natively and it works without this.
+// Here it moves on by one tile every CAROUSEL_MS. Copies of the first tiles go at the end, hidden from screen readers:
+// past the last real tile they show the first ones again, and the next step first jumps back to the real ones,
+// which look the same. So it goes round without rewinding, and the real tiles keep their order in the page.
+// It waits while the mouse is over the tiles, keyboard focus is on them, or they're out of sight, and starts stopped
+// for reduced motion. The pause button stops it until pressed again (WCAG 2.2.2).
+function startCarousel() {
+  const root = $('carousel');
+  const track = $('carousel-track');
+  const pauseButton = $('carousel-pause');
+  const count = track.children.length;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  for (const tile of [...track.children].slice(0, CAROUSEL_MAX_PER_VIEW)) {
+    const copy = tile.cloneNode(true);
+    copy.setAttribute('aria-hidden', 'true');
+    track.append(copy);
+  }
+
+  // scrollLeft is 0 at the start and goes negative in a right-to-left scroller, hence `side`.
+  const side = getComputedStyle(track).direction === 'rtl' ? -1 : 1;
+  const step = () => {
+    const [first, second] = track.children;
+    return Math.abs(second.getBoundingClientRect().left - first.getBoundingClientRect().left);
+  };
+  const current = () => Math.round(Math.abs(track.scrollLeft) / step());
+  // `auto` is instant here: the smooth scrolling in styles.css is the page's, and scroll-behavior isn't inherited.
+  const showTile = (index, smooth) => track.scrollTo({
+    left: side * index * step(),
+    behavior: smooth && !reduceMotion.matches ? 'smooth' : 'auto',
+  });
+  const move = (by) => {
+    let index = current();
+    if (by > 0 && index >= count) showTile(index -= count, false);
+    else if (by < 0 && index === 0) showTile(index = count, false);
+    showTile(index + by, true);
+  };
+
+  const holds = new Set(); // what it's waiting for: 'hover', 'focus', 'offscreen', 'hidden'
+  let stopped = reduceMotion.matches;
+  let timer = 0;
+  // Also called on every touch and wheel, so the row never moves on right after the visitor has moved it.
+  const schedule = () => {
+    clearTimeout(timer);
+    if (!stopped && !holds.size) timer = setTimeout(() => { move(1); schedule(); }, CAROUSEL_MS);
+  };
+  const hold = (reason, on) => {
+    if (on) holds.add(reason);
+    else holds.delete(reason);
+    schedule();
+  };
+  const showStopped = () => {
+    root.classList.toggle('stopped', stopped);
+    pauseButton.setAttribute('aria-label', stopped ? 'הפעלת ההחלפה האוטומטית' : 'עצירת ההחלפה האוטומטית');
+  };
+
+  $('carousel-prev').addEventListener('click', () => { move(-1); schedule(); });
+  $('carousel-next').addEventListener('click', () => { move(1); schedule(); });
+  pauseButton.addEventListener('click', () => {
+    stopped = !stopped;
+    showStopped();
+    schedule();
+  });
+  // Hover on the tiles only: over the buttons it would hold a carousel the visitor has just asked to play.
+  track.addEventListener('pointerenter', (event) => hold('hover', event.pointerType === 'mouse'));
+  track.addEventListener('pointerleave', () => hold('hover', false));
+  // Keyboard focus only (a click focuses a button in most browsers), and not the pause button, for the same reason.
+  root.addEventListener('focusin', (event) => {
+    hold('focus', event.target !== pauseButton && event.target.matches(':focus-visible'));
+  });
+  root.addEventListener('focusout', (event) => {
+    if (!root.contains(event.relatedTarget)) hold('focus', false);
+  });
+  track.addEventListener('pointerdown', schedule);
+  track.addEventListener('wheel', schedule, { passive: true });
+  document.addEventListener('visibilitychange', () => hold('hidden', document.hidden));
+  new IntersectionObserver(([entry]) => hold('offscreen', !entry.isIntersecting)).observe(track);
+
+  root.classList.add('ready');
+  showStopped();
+  schedule();
 }

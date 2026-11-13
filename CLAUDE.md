@@ -308,9 +308,18 @@ That sibling site (Vite + supabase-js, a ticket lead form before a Tranzila paym
   read as "Figurelt". The domain and mailbox stay figureit.co.il.
 - **Prices include VAT**, as Israeli customers expect; the owner doesn't want it spelled out beyond the terms' one line.
 - **Examples** (`site/examples/`, 2026-10-23): one pet and one drawing, each the source photo and the white print, cropped
-  from Life2Print's private `Examples/` (`Pets/Examples/Robin2*`, `Drawings/Examples/AchbarBenad*`) with ffmpeg at 600 px
-  wide, JPEG, `-map_metadata -1` so no EXIF or GPS goes public. Generic file names, since source names can carry people's
-  names. The section sits below the pending and thank-you panels, which app.js shows on load without scrolling to them.
+  from Life2Print's private `Examples/` (`Pets/Examples/Robin2*`, `Drawings/Examples/AchbarBenad*`), and since 2026-11-13
+  four frames from the owner's "דאבל על הכסף" episode (Kan 11, `Examples/As seen on TV/frame{2,3,5,6}.png`). The owner
+  wants each frame's whole picture height (rows 60–1139 of the screenshots, between the player's bars), cropped only at
+  the sides to 1080 × 1080; the YouTube close button that frame5's screenshot caught is painted out with ffmpeg's
+  `delogo` (x 918, y 62, 86 × 86), since no side crop avoids it. All are 600 × 600 JPEGs
+  made with ffmpeg, `-map_metadata -1` so no EXIF or GPS goes public; the dog photo (too tall) and the drawing (too wide)
+  are padded to square with a blurred copy of themselves. Generic file names, since source names can carry people's names.
+  They're a **carousel** (2026-11-13, the owner's request): a scroll-snap row, three tiles a view (two under 560 px), that
+  app.js's `startCarousel` moves one tile every 4 s. Copies of the first three tiles, `aria-hidden`, go at the end, so it
+  loops without rewinding. It waits for a mouse over the tiles, keyboard focus, the row off screen or the tab hidden,
+  starts stopped for reduced motion, and has a pause button (WCAG 2.2.2). Without app.js it's a row to swipe.
+  The section sits below the pending and thank-you panels, which app.js shows on load without scrolling to them.
   Its "להזמנה" link (`.to-order`) jumps to `#order-form` (smooth unless reduced motion), and styles.css hides it while
   the form is hidden.
 - **Language:** the UI is Hebrew and right-to-left (`<html lang="he" dir="rtl">`, logical CSS properties, `<bdi>` around codes,
