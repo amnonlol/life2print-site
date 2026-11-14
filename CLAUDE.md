@@ -316,7 +316,8 @@ That sibling site (Vite + supabase-js, a ticket lead form before a Tranzila paym
   made with ffmpeg, `-map_metadata -1` so no EXIF or GPS goes public; the dog photo (too tall) and the drawing (too wide)
   are padded to square with a blurred copy of themselves. Generic file names, since source names can carry people's names.
   They're a **carousel** (2026-11-13, the owner's request): a scroll-snap row, three tiles a view (two under 560 px), that
-  app.js's `startCarousel` moves one tile every 4 s. Copies of the first three tiles, `aria-hidden`, go at the end, so it
+  app.js's `startCarousel` moves one tile every 4 s. It opens on frame3 (`tv-dog`) and frame5 (`tv-stand`), the owner's
+  choice (2026-11-14); then each photo is followed by its print, with the other two frames between. Copies of the first three tiles, `aria-hidden`, go at the end, so it
   loops without rewinding. It waits for a mouse over the tiles, keyboard focus, the row off screen or the tab hidden,
   starts stopped for reduced motion, and has a pause button (WCAG 2.2.2). Without app.js it's a row to swipe.
   The section sits below the pending and thank-you panels, which app.js shows on load without scrolling to them.

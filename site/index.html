@@ -80,10 +80,19 @@
         <a class="button brick green to-order" href="#order-form">להזמנה<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6"/></svg></a>
       </div>
       <p class="hint">הפסלונים מגיעים לבנים, כמו בתמונות, ואפשר לצבוע אותם בבית.</p>
-      <!-- Square tiles, three to a view (two on a phone), each photo followed by its print, then frames from the TV
-           show. app.js rotates them one tile at a time and shows the buttons (Carousel); without it, a row to swipe. -->
+      <!-- Square tiles, three to a view (two on a phone): two frames from the TV show first (the owner's choice), then
+           each photo followed by its print, with the other frames between. app.js rotates them one tile at a time and
+           shows the buttons (Carousel); without it, a row to swipe. -->
       <div id="carousel" class="carousel">
         <ul id="carousel-track" class="carousel-track">
+          <li><figure>
+            <img src="examples/tv-dog.jpg" width="600" height="600" loading="lazy" alt="יד מחזיקה פסלון לבן של כלב יושב">
+            <figcaption>מתוך "דאבל על הכסף", כאן&nbsp;11</figcaption>
+          </figure></li>
+          <li><figure>
+            <img src="examples/tv-stand.jpg" width="600" height="600" loading="lazy" alt="הדוכן שלנו בפארק: שני אנשים מאחורי שולחן עם פסלונים לבנים, וילדה עומדת מולם">
+            <figcaption>מתוך "דאבל על הכסף", כאן&nbsp;11</figcaption>
+          </figure></li>
           <li><figure>
             <img src="examples/pet-photo.jpg" width="600" height="600" loading="lazy" alt="תמונה של כלב שחור עם חזה וכפות לבנים, שוכב על הרצפה">
             <figcaption>תמונה של כלב</figcaption>
@@ -103,14 +112,6 @@
           <li><figure>
             <img src="examples/drawing-toy.jpg" width="600" height="600" loading="lazy" alt="הצעצוע שהודפס ממנו: אותה דמות בפלסטיק לבן, עם אוזניים מחודדות וידיים פרושות">
             <figcaption>הצעצוע שהדפסנו ממנו</figcaption>
-          </figure></li>
-          <li><figure>
-            <img src="examples/tv-dog.jpg" width="600" height="600" loading="lazy" alt="יד מחזיקה פסלון לבן של כלב יושב">
-            <figcaption>מתוך "דאבל על הכסף", כאן&nbsp;11</figcaption>
-          </figure></li>
-          <li><figure>
-            <img src="examples/tv-stand.jpg" width="600" height="600" loading="lazy" alt="הדוכן שלנו בפארק: שני אנשים מאחורי שולחן עם פסלונים לבנים, וילדה עומדת מולם">
-            <figcaption>מתוך "דאבל על הכסף", כאן&nbsp;11</figcaption>
           </figure></li>
           <li><figure>
             <img src="examples/tv-figurine.jpg" width="600" height="600" loading="lazy" alt="יד מחזיקה פסלון לבן קטן">
